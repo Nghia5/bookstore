@@ -31,6 +31,8 @@ public class BookstoreDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        var utcDateSql = Database.IsSqlite() ? "CURRENT_TIMESTAMP" : "GETUTCDATE()";
+
         // ── User ──
         modelBuilder.Entity<User>(entity =>
         {
@@ -41,7 +43,7 @@ public class BookstoreDbContext : DbContext
             entity.Property(e => e.FullName).HasMaxLength(200).IsRequired();
             entity.Property(e => e.PhoneNumber).HasMaxLength(20);
             entity.Property(e => e.Role).HasConversion<int>();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcDateSql);
 
             entity.HasOne(e => e.Cart)
                   .WithOne(c => c.User)
@@ -112,7 +114,7 @@ public class BookstoreDbContext : DbContext
             entity.Property(e => e.SalePrice).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Language).HasMaxLength(10).HasDefaultValue("vi");
             entity.Property(e => e.CoverImageUrl).HasMaxLength(500);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcDateSql);
 
             entity.HasOne(e => e.Category)
                   .WithMany(c => c.Books)
@@ -147,7 +149,7 @@ public class BookstoreDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Rating).IsRequired();
             entity.Property(e => e.Comment).HasMaxLength(2000);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcDateSql);
             entity.HasIndex(e => new { e.UserId, e.BookId }).IsUnique();
 
             entity.HasOne(e => e.User)
@@ -166,7 +168,7 @@ public class BookstoreDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId).IsUnique();
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql(utcDateSql);
         });
 
         // ── CartItem ──
@@ -198,7 +200,7 @@ public class BookstoreDbContext : DbContext
             entity.Property(e => e.ShippingFee).HasColumnType("decimal(18,2)");
             entity.Property(e => e.FinalAmount).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Note).HasMaxLength(1000);
-            entity.Property(e => e.OrderDate).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.OrderDate).HasDefaultValueSql(utcDateSql);
 
             entity.HasOne(e => e.User)
                   .WithMany(u => u.Orders)
@@ -243,7 +245,7 @@ public class BookstoreDbContext : DbContext
             entity.Property(e => e.Method).HasConversion<int>();
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Status).HasConversion<int>();
-            entity.Property(e => e.PaymentDate).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.PaymentDate).HasDefaultValueSql(utcDateSql);
         });
 
         // ── Discount ──
