@@ -1,5 +1,5 @@
 services:
-  # 1. Backend Web Service (.NET 10 Web API Docker)
+  # 1. Backend Web Service (.NET 10 API Docker)
   - type: web
     name: bookstore-backend
     runtime: docker
@@ -12,13 +12,22 @@ services:
         value: Production
       - key: ConnectionStrings__DefaultConnection
         sync: false
-    healthCheckPath: /swagger
+    healthCheckPath: /health
 
-  # 2. Frontend Web Service (React 19 + Nginx Docker)
-  - type: web
+  # 2. Frontend Static Site (100% Free CDN, SPA Client-Side Routing)
+  - type: static
     name: bookstore-frontend
-    runtime: docker
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
     plan: free
-    region: singapore
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: bookstore-backend
+          property: url

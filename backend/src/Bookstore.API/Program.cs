@@ -88,7 +88,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -113,15 +113,16 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// ── Health Check Endpoint for Cloud / Render ──
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", time = DateTime.UtcNow }));
+
 // ── Middleware Pipeline ──
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Bookstore API v1");
-    });
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Bookstore API v1");
+    options.RoutePrefix = "swagger";
+});
 
 app.UseSerilogRequestLogging();
 
