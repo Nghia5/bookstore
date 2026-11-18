@@ -1,9 +1,14 @@
 import axios from 'axios'
 
+const remoteDefault = 'https://bookstore-backend-53v4.onrender.com/api'
 const rawBase = import.meta.env.VITE_API_URL
-const apiBase = rawBase 
-  ? (rawBase.endsWith('/api') ? rawBase : `${rawBase.replace(/\/+$/, '')}/api`)
-  : '/api'
+
+let apiBase = '/api'
+if (rawBase) {
+  apiBase = rawBase.endsWith('/api') ? rawBase : `${rawBase.replace(/\/+$/, '')}/api`
+} else if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+  apiBase = remoteDefault
+}
 
 const apiClient = axios.create({
   baseURL: apiBase,

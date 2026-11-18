@@ -113,8 +113,11 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// ── Health Check Endpoint for Cloud / Render ──
+// ── Health Check & Swagger Redirects (200 OK for Render Health Checks) ──
+app.MapGet("/", () => Results.Content("<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0;url=/swagger/index.html'></head><body><h2>Bookstore API is Live!</h2><p><a href='/swagger/index.html'>Open Swagger UI</a></p></body></html>", "text/html"));
+app.MapGet("/swagger", () => Results.Content("<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0;url=/swagger/index.html'></head><body><h2>Bookstore API is Live!</h2><p><a href='/swagger/index.html'>Open Swagger UI</a></p></body></html>", "text/html"));
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", time = DateTime.UtcNow }));
+app.MapGet("/api/health", () => Results.Ok(new { status = "Healthy", time = DateTime.UtcNow }));
 
 // ── Middleware Pipeline ──
 app.UseSwagger();
