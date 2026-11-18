@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sand-50: #FAFAF7;
+  --color-sand-100: #F5F3ED;
+  --color-sand-200: #EBE7DC;
+  --color-sand-300: #DDD6C4;
+  --color-charcoal-900: #191614;
+  --color-charcoal-800: #2C2825;
+  --color-charcoal-700: #423E3A;
+  --color-charcoal-600: #615C56;
+  --color-charcoal-400: #8C857B;
+  --color-terracotta-600: #B84A39;
+  --color-terracotta-700: #9E3A2B;
+  --color-amber-600: #D97706;
+  --color-amber-500: #F59E0B;
+  --color-forest-700: #2D5A43;
+  --color-forest-800: #1E3F2E;
+  
+  --font-serif: 'Playfair Display', Georgia, Cambria, serif;
+  --font-sans: 'Be Vietnam Pro', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco, 'Courier New', monospace;
+}
+
+html, body {
+  font-family: 'Be Vietnam Pro', 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #FAFAF7;
+  color: #191614;
+  -webkit-font-smoothing: antialiased;
+  /* Enforce clean, modern lining numbers with equal cap-height and baseline alignment */
+  font-variant-numeric: lining-nums tabular-nums;
+  -webkit-font-feature-settings: "lnum" 1, "tnum" 1;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+}
+
+h1, h2, h3, .font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-variant-numeric: lining-nums tabular-nums;
+  -webkit-font-feature-settings: "lnum" 1, "tnum" 1;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+}
+
+code, kbd, samp, pre, .font-mono {
+  font-family: 'JetBrains Mono', Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
+  font-variant-numeric: lining-nums tabular-nums !important;
+  -webkit-font-feature-settings: "lnum" 1, "tnum" 1 !important;
+  font-feature-settings: "lnum" 1, "tnum" 1 !important;
+  letter-spacing: -0.01em;
+}
+
+/* Specific helper for numbers, prices, statistics, and order codes */
+.font-number, .tabular-nums {
+  font-family: 'Inter', 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+  font-variant-numeric: lining-nums tabular-nums !important;
+  -webkit-font-feature-settings: "lnum" 1, "tnum" 1 !important;
+  font-feature-settings: "lnum" 1, "tnum" 1 !important;
+}
+
+/* 3D Realistic Book Card Shadow */
+.book-cover-shadow {
+  box-shadow: 
+    -3px 3px 6px rgba(0, 0, 0, 0.08),
+    0 10px 24px rgba(25, 22, 20, 0.14),
+    inset -2px 0 2px rgba(255, 255, 255, 0.15),
+    inset 2px 0 3px rgba(0, 0, 0, 0.2);
+}
+
+.book-cover-shadow:hover {
+  box-shadow: 
+    -5px 8px 16px rgba(0, 0, 0, 0.12),
+    0 16px 36px rgba(25, 22, 20, 0.18),
+    inset -2px 0 2px rgba(255, 255, 255, 0.2),
+    inset 2px 0 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Elegant scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F5F3ED;
+}
+::-webkit-scrollbar-thumb {
+  background: #DDD6C4;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8C857B;
+}

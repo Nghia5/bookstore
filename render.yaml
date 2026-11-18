@@ -1,0 +1,24 @@
+services:
+  # 1. Backend Web Service (.NET 10 Web API Docker)
+  - type: web
+    name: bookstore-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: singapore
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+    healthCheckPath: /swagger
+
+  # 2. Frontend Web Service (React 19 + Nginx Docker)
+  - type: web
+    name: bookstore-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    region: singapore
