@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { BookOpen, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import apiClient from '@/api/client'
-import { useAuthStore } from '@/stores/authStore'
 import { toast } from 'sonner'
 
 const registerSchema = z
@@ -27,7 +26,6 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const login = useAuthStore((s) => s.login)
   const navigate = useNavigate()
 
   const {
@@ -48,10 +46,9 @@ export default function RegisterPage() {
         password: data.password,
       })
 
-      const { user, token } = response.data
-      login(user, token)
-      toast.success(`Đăng ký thành công! Chào mừng ${user.fullName} gia nhập Bookstore`)
-      navigate('/')
+      const { user } = response.data
+      toast.success(`Đăng ký thành công! Chào mừng ${user.fullName}. Vui lòng đăng nhập để tiếp tục.`)
+      navigate('/login', { state: { email: data.email.trim() } })
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Đăng ký không thành công. Email có thể đã tồn tại.'
       setErrorMessage(msg)
