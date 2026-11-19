@@ -149,6 +149,7 @@ public class BookstoreDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Rating).IsRequired();
             entity.Property(e => e.Comment).HasMaxLength(2000);
+            entity.Property(e => e.AdminReply).HasMaxLength(2000);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcDateSql);
             entity.HasIndex(e => new { e.UserId, e.BookId }).IsUnique();
 

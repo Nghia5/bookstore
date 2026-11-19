@@ -32,7 +32,9 @@ public class ReviewsController : ControllerBase
                 UserName = r.User.FullName,
                 r.Rating,
                 r.Comment,
-                r.CreatedAt
+                r.CreatedAt,
+                r.AdminReply,
+                r.AdminReplyAt
             })
             .ToListAsync();
 
@@ -65,6 +67,19 @@ public class ReviewsController : ControllerBase
         });
     }
 
+    private Task<bool> HasDeliveredPurchaseAsync(int userId, int bookId) =>
+        _context.Orders.AnyAsync(o => o.UserId == userId && o.Status == Bookstore.Domain.Enums.OrderStatus.Delivered
+            && o.Items.Any(i => i.BookId == bookId));
+
+    [HttpGet("can-review")]
+    [Authorize]
+    public async Task<IActionResult> CanReview(int bookId)
+    {
+        var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out var userId)) return Ok(new { canReview = false });
+        return Ok(new { canReview = await HasDeliveredPurchaseAsync(userId, bookId) });
+    }
+
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateOrUpdateReview(int bookId, [FromBody] CreateReviewRequest request)
@@ -73,6 +88,11 @@ public class ReviewsController : ControllerBase
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
         {
             return Unauthorized(new { message = "Vui lòng đăng nhập để đánh giá tác phẩm." });
+        }
+
+        if (!await HasDeliveredPurchaseAsync(userId, bookId))
+        {
+            return StatusCode(403, new { message = "Bạn chỉ có thể đánh giá sau khi đã mua và nhận được cuốn sách này (đơn hàng ở trạng thái Đã giao)." });
         }
 
         if (request.Rating < 1 || request.Rating > 5)

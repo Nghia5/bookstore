@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Star, MessageSquare, Trash2 } from 'lucide-react'
+import { Star, MessageSquare, Trash2, Reply, ExternalLink } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import apiClient from '@/api/client'
 import { toast } from 'sonner'
 
@@ -14,11 +15,16 @@ interface AdminReview {
   rating: number
   comment?: string
   createdAt: string
+  adminReply?: string | null
+  adminReplyAt?: string | null
 }
 
 export default function AdminReviewsTab() {
   const [reviews, setReviews] = useState<AdminReview[]>([])
   const [loading, setLoading] = useState(false)
+  const [drafts, setDrafts] = useState<Record<number, string>>({})
+  const [openReply, setOpenReply] = useState<number | null>(null)
+  const [filter, setFilter] = useState<'all' | 'pending'>('all')
 
   const fetchReviews = async () => {
     try {
@@ -35,6 +41,29 @@ export default function AdminReviewsTab() {
   useEffect(() => {
     fetchReviews()
   }, [])
+
+  const sendReply = async (review: AdminReview) => {
+    const text = (drafts[review.id] ?? review.adminReply ?? '').trim()
+    if (!text) { toast.error('Vui lòng nhập nội dung phản hồi.'); return }
+    try {
+      const res = await apiClient.post(`/admin/reviews/${review.id}/reply`, { reply: text })
+      toast.success(res.data?.message || 'Đã gửi phản hồi.')
+      setOpenReply(null)
+      fetchReviews()
+    } catch {
+      toast.error('Không thể gửi phản hồi.')
+    }
+  }
+
+  const removeReply = async (review: AdminReview) => {
+    try {
+      await apiClient.post(`/admin/reviews/${review.id}/reply`, { reply: '' })
+      toast.success('Đã gỡ phản hồi.')
+      fetchReviews()
+    } catch {
+      toast.error('Không thể gỡ phản hồi.')
+    }
+  }
 
   const handleDelete = async (review: AdminReview) => {
     if (!confirm(`Bạn có chắc muốn xóa nhận xét của "${review.userName}" cho cuốn "${review.bookTitle}"?`)) return
@@ -62,6 +91,11 @@ export default function AdminReviewsTab() {
         </div>
       </div>
 
+      <div className="flex gap-2 text-xs">
+        <button onClick={() => setFilter('all')} className={`px-3 py-1.5 rounded-full border font-semibold ${filter === 'all' ? 'bg-[#191614] text-white border-[#191614]' : 'bg-white text-[#615C56] border-[#DDD6C4]'}`}>Tất cả ({reviews.length})</button>
+        <button onClick={() => setFilter('pending')} className={`px-3 py-1.5 rounded-full border font-semibold ${filter === 'pending' ? 'bg-[#191614] text-white border-[#191614]' : 'bg-white text-[#615C56] border-[#DDD6C4]'}`}>Chưa phản hồi ({reviews.filter(r => !r.adminReply).length})</button>
+      </div>
+
       {/* Reviews list */}
       {loading ? (
         <div className="py-12 text-center text-xs text-[#706B65]">Đang tải danh sách nhận xét...</div>
@@ -71,7 +105,7 @@ export default function AdminReviewsTab() {
         </div>
       ) : (
         <div className="space-y-3.5">
-          {reviews.map(r => (
+          {reviews.filter(r => filter === 'all' || !r.adminReply).map(r => (
             <div
               key={r.id}
               className="bg-white rounded-2xl border border-[#EBE7DC] p-5 shadow-xs hover:border-[#DDD6C4] transition-all space-y-3"
@@ -87,9 +121,10 @@ export default function AdminReviewsTab() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-serif font-bold text-sm text-[#191614] line-clamp-1">
+                    <Link to={`/books/${r.bookId}`} target="_blank" className="font-serif font-bold text-sm text-[#191614] line-clamp-1 hover:text-[#B84A39] inline-flex items-center gap-1" title="Mở trang sản phẩm">
                       {r.bookTitle}
-                    </h3>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </Link>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex items-center gap-0.5 text-amber-500">
                         {[1, 2, 3, 4, 5].map(star => (
@@ -128,6 +163,38 @@ export default function AdminReviewsTab() {
                 <div className="p-3 bg-[#FAF9F5] rounded-xl border border-[#F5F3ED] text-xs text-[#423E3A] leading-relaxed">
                   "{r.comment}"
                 </div>
+              )}
+
+              {r.adminReply && openReply !== r.id && (
+                <div className="ml-4 p-3 bg-[#FFF7ED] rounded-xl border border-amber-200 text-xs text-[#423E3A] leading-relaxed">
+                  <p className="font-bold text-[#B84A39] mb-1">Phản hồi từ Bookstore · {r.adminReplyAt ? new Date(r.adminReplyAt).toLocaleDateString('vi-VN') : ''}</p>
+                  {r.adminReply}
+                  <div className="mt-2 flex gap-3 font-semibold">
+                    <button onClick={() => { setDrafts(d => ({ ...d, [r.id]: r.adminReply || '' })); setOpenReply(r.id) }} className="text-[#191614] hover:underline">Sửa</button>
+                    <button onClick={() => removeReply(r)} className="text-red-600 hover:underline">Gỡ</button>
+                  </div>
+                </div>
+              )}
+
+              {openReply === r.id ? (
+                <div className="ml-4 space-y-2">
+                  <textarea
+                    rows={3}
+                    autoFocus
+                    value={drafts[r.id] ?? ''}
+                    onChange={(e) => setDrafts(d => ({ ...d, [r.id]: e.target.value }))}
+                    placeholder={`Trả lời ${r.userName}...`}
+                    className="w-full text-xs rounded-xl border border-[#DDD6C4] p-3 outline-none focus:border-[#191614] resize-none"
+                  />
+                  <div className="flex gap-2 justify-end text-xs">
+                    <button onClick={() => setOpenReply(null)} className="px-3 py-1.5 rounded-lg border border-[#DDD6C4] font-semibold text-[#615C56]">Hủy</button>
+                    <button onClick={() => sendReply(r)} className="px-3 py-1.5 rounded-lg bg-[#191614] hover:bg-[#B84A39] text-white font-bold">Gửi phản hồi</button>
+                  </div>
+                </div>
+              ) : !r.adminReply && (
+                <button onClick={() => { setDrafts(d => ({ ...d, [r.id]: '' })); setOpenReply(r.id) }} className="ml-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#B84A39] hover:underline">
+                  <Reply className="w-3.5 h-3.5" /> Trả lời khách hàng
+                </button>
               )}
             </div>
           ))}

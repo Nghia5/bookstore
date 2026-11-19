@@ -62,6 +62,7 @@ export default function BookDetailPage() {
   const { appliedVoucherCode, setAppliedVoucher } = useCartStore()
   const { isAuthenticated, user } = useAuthStore()
   const requireAuth = useRequireAuth()
+  const [canReview, setCanReview] = useState(false)
   const { isInWishlist, toggleWishlist } = useWishlistStore()
 
   // Book preview modal state
@@ -151,8 +152,17 @@ export default function BookDetailPage() {
     navigate('/cart')
   }
 
+  useEffect(() => {
+    if (!isAuthenticated) { setCanReview(false); return }
+    apiClient.get(`/books/${bookId}/reviews/can-review`).then(res => setCanReview(!!res.data?.canReview)).catch(() => setCanReview(false))
+  }, [bookId, isAuthenticated])
+
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isAuthenticated && !canReview) {
+      toast.error('Bạn chỉ có thể đánh giá sau khi đã mua và nhận được sách (đơn hàng Đã giao).')
+      return
+    }
     if (!isAuthenticated) {
       toast.error('Vui lòng đăng nhập để gửi đánh giá tác phẩm.')
       return
@@ -499,8 +509,8 @@ export default function BookDetailPage() {
             rows={3}
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder={isAuthenticated ? "Chia sẻ cảm xúc hoặc bài học tâm đắc bạn đúc kết được từ cuốn sách này..." : "Vui lòng đăng nhập để viết nhận xét..."}
-            disabled={!isAuthenticated}
+            placeholder={!isAuthenticated ? "Vui lòng đăng nhập để viết nhận xét..." : !canReview ? "Chỉ khách hàng đã mua và nhận được sách (đơn Đã giao) mới có thể đánh giá." : "Chia sẻ cảm xúc hoặc bài học tâm đắc bạn đúc kết được từ cuốn sách này..."}
+            disabled={!isAuthenticated || !canReview}
             className="w-full text-xs rounded-xl border border-[#DDD6C4] p-3 outline-none focus:border-[#191614] bg-white resize-none"
           />
 
@@ -515,7 +525,7 @@ export default function BookDetailPage() {
 
             <button
               type="submit"
-              disabled={isSubmittingReview || !isAuthenticated || !newComment.trim()}
+              disabled={isSubmittingReview || !isAuthenticated || !canReview || !newComment.trim()}
               className="px-4 py-2 rounded-xl bg-[#191614] hover:bg-[#B84A39] text-white text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
             >
               <Send className="w-3.5 h-3.5" />
@@ -540,6 +550,12 @@ export default function BookDetailPage() {
                 ))}
               </div>
               <p className="text-xs sm:text-sm text-[#423E3A] leading-relaxed">{r.comment}</p>
+              {r.adminReply && (
+                <div className="mt-2 ml-4 p-3 bg-[#FFF7ED] rounded-xl border border-amber-200 text-xs text-[#423E3A] leading-relaxed">
+                  <p className="font-bold text-[#B84A39] mb-0.5">Phản hồi từ Bookstore</p>
+                  {r.adminReply}
+                </div>
+              )}
             </div>
           ))}
         </div>

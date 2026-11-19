@@ -772,11 +772,34 @@ public class AdminController : ControllerBase
                 UserEmail = r.User.Email,
                 r.Rating,
                 r.Comment,
-                r.CreatedAt
+                r.CreatedAt,
+                r.AdminReply,
+                r.AdminReplyAt
             })
             .ToListAsync();
 
         return Ok(reviews);
+    }
+
+    [HttpPost("reviews/{id:int}/reply")]
+    public async Task<IActionResult> ReplyReview(int id, [FromBody] ReplyReviewRequest request)
+    {
+        var review = await _context.Reviews.FindAsync(id);
+        if (review == null) return NotFound(new { message = "Không tìm thấy nhận xét này." });
+
+        var text = request.Reply?.Trim();
+        if (string.IsNullOrEmpty(text))
+        {
+            review.AdminReply = null;
+            review.AdminReplyAt = null;
+        }
+        else
+        {
+            review.AdminReply = text;
+            review.AdminReplyAt = DateTime.UtcNow;
+        }
+        await _context.SaveChangesAsync();
+        return Ok(new { message = text == null ? "Đã gỡ phản hồi." : "Đã gửi phản hồi tới khách hàng!", review.AdminReply, review.AdminReplyAt });
     }
 
     [HttpDelete("reviews/{id:int}")]
@@ -1011,4 +1034,9 @@ public class UpdateBookAdminRequest
 public class UpdateOrderStatusRequest
 {
     public string Status { get; set; } = string.Empty;
+}
+
+public class ReplyReviewRequest
+{
+    public string? Reply { get; set; }
 }
