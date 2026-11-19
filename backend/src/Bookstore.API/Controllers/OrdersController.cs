@@ -19,6 +19,30 @@ public class OrdersController : ControllerBase
         _context = context;
     }
 
+    private const int PointValue = 100; // VND per point
+
+    // Earn 1 point per 1.000 VND of delivered orders; spend via checkout
+    private async Task<(int earned, int used, int balance)> GetLoyaltyAsync(int userId)
+    {
+        var amounts = await _context.Orders
+            .Where(o => o.UserId == userId && o.Status == OrderStatus.Delivered)
+            .Select(o => o.FinalAmount)
+            .ToListAsync();
+        var earned = amounts.Sum(a => (int)Math.Floor(a / 1000m));
+        var used = (await _context.Users.FindAsync(userId))?.PointsUsed ?? 0;
+        return (earned, used, Math.Max(0, earned - used));
+    }
+
+    [HttpGet("loyalty")]
+    [Authorize]
+    public async Task<IActionResult> GetLoyalty()
+    {
+        var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out var userId)) return Unauthorized();
+        var (earned, used, balance) = await GetLoyaltyAsync(userId);
+        return Ok(new { earned, used, balance, pointValue = PointValue });
+    }
+
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
@@ -89,6 +113,21 @@ public class OrdersController : ControllerBase
             }
         }
 
+        // Loyalty points redemption: 1 point = 100 VND
+        int pointsUsed = 0;
+        if (request.PointsToUse > 0)
+        {
+            var balance = (await GetLoyaltyAsync(userId)).balance;
+            var maxByAmount = (int)Math.Floor((subtotal - discountAmount) / PointValue);
+            pointsUsed = Math.Max(0, Math.Min(request.PointsToUse, Math.Min(balance, maxByAmount)));
+            discountAmount += pointsUsed * PointValue;
+            if (pointsUsed > 0)
+            {
+                var buyer = await _context.Users.FindAsync(userId);
+                if (buyer != null) buyer.PointsUsed += pointsUsed;
+            }
+        }
+
         decimal finalAmount = subtotal - discountAmount + shippingFee;
 
         // Create or reuse shipping address if receiver details provided
@@ -121,6 +160,7 @@ public class OrdersController : ControllerBase
             ShippingFee = shippingFee,
             FinalAmount = finalAmount,
             Note = request.Note,
+            PointsUsed = pointsUsed,
             OrderDate = DateTime.UtcNow,
             Items = orderItems,
             Payment = new Payment
@@ -182,6 +222,11 @@ public class OrdersController : ControllerBase
         }
 
         order.Status = OrderStatus.Cancelled;
+        if (order.PointsUsed > 0)
+        {
+            var owner = await _context.Users.FindAsync(userId);
+            if (owner != null) owner.PointsUsed = Math.Max(0, owner.PointsUsed - order.PointsUsed);
+        }
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Đã hủy đơn hàng thành công!", status = order.Status.ToString() });
@@ -208,6 +253,7 @@ public class OrdersController : ControllerBase
                 o.OrderCode,
                 o.OrderDate,
                 o.FinalAmount,
+                o.PointsUsed,
                 Status = o.Status.ToString(),
                 Items = o.Items.Select(i => new
                 {
@@ -229,6 +275,7 @@ public class CreateOrderRequest
     public List<OrderItemRequest> Items { get; set; } = new();
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.COD;
     public string? DiscountCode { get; set; }
+    public int PointsToUse { get; set; }
     public string? ReceiverName { get; set; }
     public string? ReceiverPhone { get; set; }
     public string? StreetAddress { get; set; }

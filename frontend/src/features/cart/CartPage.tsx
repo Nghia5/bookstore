@@ -12,11 +12,13 @@ import { toast } from 'sonner'
 import InvoiceModal from '@/components/InvoiceModal'
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, clearCart, getTotal, appliedVoucherCode, setAppliedVoucher } = useCartStore()
+  const { items, removeItem, updateQuantity, clearCart, getSelectedTotal, toggleSelect, setAllSelected, removeSelected, appliedVoucherCode, setAppliedVoucher } = useCartStore()
+  const selectedItems = items.filter((i) => i.selected !== false)
+  const allSelected = items.length > 0 && selectedItems.length === items.length
   const { isAuthenticated, user } = useAuthStore()
   const navigate = useNavigate()
 
-  const subtotal = getTotal()
+  const subtotal = getSelectedTotal()
   const shippingFee = subtotal >= 300000 || subtotal === 0 ? 0 : 30000
 
   // Discount / Voucher state
@@ -36,7 +38,15 @@ export default function CartPage() {
     }
   }
 
-  const finalTotal = Math.max(0, subtotal - discountAmount + shippingFee)
+  // Loyalty points (1 point = pointValue VND)
+  const [loyalty, setLoyalty] = useState({ balance: 0, pointValue: 100 })
+  const [usePoints, setUsePoints] = useState(false)
+  useEffect(() => {
+    if (isAuthenticated) apiClient.get('/orders/loyalty').then((r) => setLoyalty(r.data)).catch(() => {})
+  }, [isAuthenticated])
+  const pointsApplied = usePoints ? Math.max(0, Math.min(loyalty.balance, Math.floor((subtotal - discountAmount) / loyalty.pointValue))) : 0
+  const pointsDiscount = pointsApplied * loyalty.pointValue
+  const finalTotal = Math.max(0, subtotal - discountAmount - pointsDiscount + shippingFee)
 
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -117,6 +127,11 @@ export default function CartPage() {
     }
 
     // 2. Validate form
+    if (selectedItems.length === 0) {
+      toast.error('Vui lòng tick chọn ít nhất 1 sản phẩm để mua.')
+      return
+    }
+
     if (!formData.receiverName.trim() || !formData.receiverPhone.trim() || !formData.streetAddress.trim()) {
       toast.error('Vui lòng điền đầy đủ họ tên, số điện thoại và địa chỉ nhận hàng.')
       return
@@ -125,7 +140,7 @@ export default function CartPage() {
     try {
       setIsSubmitting(true)
       const payload = {
-        items: items.map(item => ({
+        items: selectedItems.map(item => ({
           bookId: item.bookId,
           quantity: item.quantity
         })),
@@ -134,12 +149,13 @@ export default function CartPage() {
         receiverPhone: formData.receiverPhone.trim(),
         streetAddress: formData.streetAddress.trim(),
         note: formData.note.trim(),
-        discountCode: appliedDiscount ? appliedDiscount.code : undefined
+        discountCode: appliedDiscount ? appliedDiscount.code : undefined,
+        pointsToUse: pointsApplied
       }
 
       const res = await apiClient.post('/orders', payload)
       setOrderSuccess(res.data)
-      clearCart()
+      removeSelected()
       toast.success('Đặt hàng thành công!')
     } catch (err: any) {
       console.error('Checkout error:', err)
@@ -269,8 +285,12 @@ export default function CartPage() {
             Tiếp tục chọn sách
           </Link>
           <h1 className="font-serif text-3xl font-bold text-[#191614]">Giỏ hàng của bạn</h1>
-          <p className="mt-1 text-xs text-[#615C56]">Đang có {items.length} đầu sách được chọn</p>
+          <p className="mt-1 text-xs text-[#615C56]">Đang chọn {selectedItems.length}/{items.length} đầu sách để mua</p>
         </div>
+        <label className="flex items-center gap-2 text-xs font-semibold text-[#191614] cursor-pointer">
+          <input type="checkbox" checked={allSelected} onChange={(e) => setAllSelected(e.target.checked)} className="h-4 w-4 accent-[#191614]" />
+          Chọn tất cả
+        </label>
         <button
           onClick={clearCart}
           className="rounded-xl border border-red-200 px-3.5 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50"
@@ -290,6 +310,13 @@ export default function CartPage() {
                 key={item.id}
                 className="flex gap-4 rounded-2xl border border-[#EBE7DC] bg-white p-4 shadow-xs hover:border-[#DDD6C4] transition-all"
               >
+                <input
+                  type="checkbox"
+                  checked={item.selected !== false}
+                  onChange={() => toggleSelect(item.bookId)}
+                  title="Chọn mua sản phẩm này"
+                  className="h-4 w-4 mt-1 shrink-0 self-center accent-[#191614] cursor-pointer"
+                />
                 {/* Book Cover */}
                 <div className="h-28 w-20 shrink-0 overflow-hidden rounded-xl bg-[#F5F3ED] border border-[#DDD6C4]">
                   <img
@@ -314,6 +341,9 @@ export default function CartPage() {
                   </h3>
                   <p className="text-xs text-[#615C56] mt-0.5 truncate">
                     {item.book.authors?.map((a) => a.name).join(', ') || 'Tác giả'}
+                  </p>
+                  <p className="text-[11px] text-[#8C857B] mt-0.5 font-sans tabular-nums">
+                    Thêm vào giỏ lúc: {new Date(item.addedAt ?? item.id).toLocaleString('vi-VN')}
                   </p>
 
                   <div className="mt-auto flex items-end justify-between pt-3">
@@ -370,6 +400,16 @@ export default function CartPage() {
                 <span className="font-semibold text-[#191614]">{formatPrice(subtotal)}</span>
               </div>
               
+              {isAuthenticated && loyalty.balance > 0 && (
+                <label className="flex items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[#191614] cursor-pointer">
+                  <span className="flex items-center gap-2">
+                    <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="h-4 w-4 accent-[#191614]" />
+                    Dùng điểm tích lũy (có {loyalty.balance.toLocaleString('vi-VN')} điểm)
+                  </span>
+                  <span className="font-semibold text-amber-800">{usePoints ? '-' + formatPrice(pointsDiscount) : ''}</span>
+                </label>
+              )}
+
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-700 font-medium">
                   <span>Mã giảm giá ({appliedDiscount?.code})</span>

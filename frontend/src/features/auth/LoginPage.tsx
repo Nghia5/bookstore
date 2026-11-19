@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { BookOpen, Eye, EyeOff, ShieldCheck, UserCheck } from 'lucide-react'
+import { BookOpen, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/authStore'
@@ -26,7 +26,6 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -61,13 +60,6 @@ export default function LoginPage() {
     }
   }
 
-  // Helper quick-fill demo credentials
-  const fillCredentials = (email: string, pass: string) => {
-    setValue('email', email, { shouldValidate: true })
-    setValue('password', pass, { shouldValidate: true })
-    setErrorMessage('')
-  }
-
   return (
     <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
@@ -79,29 +71,6 @@ export default function LoginPage() {
           </div>
           <h1 className="font-serif text-3xl font-bold text-[#191614]">Chào mừng trở lại</h1>
           <p className="mt-1 text-sm text-[#615C56]">Đăng nhập vào tài khoản Bookstore của bạn</p>
-        </div>
-
-        {/* Quick fill test accounts banner */}
-        <div className="mb-5 rounded-2xl border border-[#DDD6C4] bg-[#F5F3ED] p-3.5 text-xs text-[#615C56]">
-          <span className="font-bold text-[#191614] block mb-2">⚡ Tài khoản thử nghiệm nhanh:</span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => fillCredentials('admin@bookstore.vn', 'Admin@123')}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-white border border-[#DDD6C4] py-1.5 px-2 hover:bg-[#191614] hover:text-white transition-colors font-medium text-[#191614]"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 text-[#B84A39]" />
-              <span>Admin (Quản trị)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fillCredentials('docgia@gmail.com', 'User@123')}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-white border border-[#DDD6C4] py-1.5 px-2 hover:bg-[#191614] hover:text-white transition-colors font-medium text-[#191614]"
-            >
-              <UserCheck className="h-3.5 w-3.5 text-[#2D5A43]" />
-              <span>Độc giả (Customer)</span>
-            </button>
-          </div>
         </div>
 
         {/* Form Card */}

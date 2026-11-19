@@ -11,6 +11,7 @@ public class User
     public string? PhoneNumber { get; set; }
     public UserRole Role { get; set; } = UserRole.Customer;
     public bool IsActive { get; set; } = true;
+    public int PointsUsed { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation

@@ -10,6 +10,11 @@ interface CartState {
   removeItem: (bookId: number) => void
   updateQuantity: (bookId: number, quantity: number) => void
   clearCart: () => void
+  toggleSelect: (bookId: number) => void
+  setAllSelected: (selected: boolean) => void
+  removeSelected: () => void
+  getSelectedItems: () => CartItem[]
+  getSelectedTotal: () => number
   getTotal: () => number
   getItemCount: () => number
 }
@@ -18,7 +23,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      appliedVoucherCode: 'WELCOME10', // Default starter voucher
+      appliedVoucherCode: null,
       setAppliedVoucher: (code) => set({ appliedVoucherCode: code }),
       addItem: (book, quantity = 1) =>
         set((state) => {
@@ -31,7 +36,7 @@ export const useCartStore = create<CartState>()(
             }
           }
           return {
-            items: [...state.items, { id: Date.now(), bookId: book.id, book, quantity }],
+            items: [...state.items, { id: Date.now(), bookId: book.id, book, quantity, addedAt: new Date().toISOString(), selected: true }],
           }
         }),
       removeItem: (bookId) =>
@@ -43,6 +48,19 @@ export const useCartStore = create<CartState>()(
             : state.items.map((i) => (i.bookId === bookId ? { ...i, quantity } : i)),
         })),
       clearCart: () => set({ items: [] }),
+      toggleSelect: (bookId) =>
+        set((state) => ({
+          items: state.items.map((i) => (i.bookId === bookId ? { ...i, selected: i.selected === false } : i)),
+        })),
+      setAllSelected: (selected) =>
+        set((state) => ({ items: state.items.map((i) => ({ ...i, selected })) })),
+      removeSelected: () =>
+        set((state) => ({ items: state.items.filter((i) => i.selected === false) })),
+      getSelectedItems: () => get().items.filter((i) => i.selected !== false),
+      getSelectedTotal: () =>
+        get().items
+          .filter((i) => i.selected !== false)
+          .reduce((sum, item) => sum + (item.book.salePrice ?? item.book.originalPrice) * item.quantity, 0),
       getTotal: () =>
         get().items.reduce((sum, item) => sum + (item.book.salePrice ?? item.book.originalPrice) * item.quantity, 0),
       getItemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),

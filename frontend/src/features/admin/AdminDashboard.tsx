@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { 
   BookOpen, ShoppingCart, Users, DollarSign, Plus, 
   Search, Edit3, Trash2, 
-  ArrowLeft, X, Shield, Key, 
+  ArrowLeft, X, Shield, Key, LogOut,
   UserPlus, Feather, Eye, Printer, AlertTriangle,
   CheckCircle2, Truck, Clock, Ban, PackageCheck, RefreshCw
 } from 'lucide-react'
@@ -516,62 +516,61 @@ export default function AdminDashboard() {
       {/* Top Navbar */}
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EBE7DC] shadow-xs">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-4">
-            
+          {/* Row 1: Brand + User info */}
+          <div className="flex h-14 items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Link to="/" className="p-2 rounded-xl text-[#706B65] hover:text-[#191614] hover:bg-[#F5F3ED] transition-colors" title="Về trang chủ">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-[#191614] flex items-center justify-center text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#191614] flex items-center justify-center text-white shadow-sm">
                   <Shield className="w-4 h-4 text-amber-400" />
                 </div>
                 <div>
-                  <span className="font-serif font-bold text-lg text-[#191614] leading-tight block">Bookstore Admin</span>
+                  <span className="font-serif font-bold text-base text-[#191614] leading-tight block">Bookstore Admin</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                    Administrator
+                    {user?.fullName || 'Administrator'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <nav className="flex items-center gap-1 overflow-x-auto">
-              {[
-                { id: 'overview', label: 'Tổng quan' },
-                { id: 'books', label: `Kho Sách (${overview?.totalBooks ?? 1000})` },
-                { id: 'receipts', label: `Nhập kho (${overview?.totalReceipts ?? 3})` },
-                { id: 'discounts', label: `Khuyến mãi (${overview?.totalDiscounts ?? 6})` },
-                { id: 'authors', label: `Tác giả (${authors.length || 40})` },
-                { id: 'orders', label: `Đơn hàng (${orders.length || 5})` },
-                { id: 'reviews', label: `Đánh giá (${overview?.totalReviews ?? 20})` },
-                { id: 'users', label: `Tài khoản (${adminUsers.length || 5})` },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={cn(
-                    "px-3.5 py-2 rounded-xl text-xs font-bold font-sans tabular-nums transition-all whitespace-nowrap",
-                    activeTab === tab.id
-                      ? "bg-[#191614] text-white shadow-xs"
-                      : "text-[#615C56] hover:bg-[#F5F3ED] hover:text-[#191614]"
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={logout}
-                className="text-xs font-semibold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-xl transition-colors"
-              >
-                Đăng xuất
-              </button>
-            </div>
-
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Đăng xuất
+            </button>
           </div>
+
+          {/* Row 2: Navigation Tabs - scrollable */}
+          <nav className="flex items-center gap-1 overflow-x-auto pb-2 -mb-px scrollbar-hide">
+            {[
+              { id: 'overview', label: 'Tổng quan' },
+              { id: 'books', label: `Kho Sách (${overview?.totalBooks ?? 1000})` },
+              { id: 'receipts', label: `Nhập kho (${overview?.totalReceipts ?? 3})` },
+              { id: 'discounts', label: `Khuyến mãi (${overview?.totalDiscounts ?? 6})` },
+              { id: 'authors', label: `Tác giả (${authors.length || 40})` },
+              { id: 'orders', label: `Đơn hàng (${orders.length || 5})` },
+              { id: 'reviews', label: `Đánh giá (${overview?.totalReviews ?? 20})` },
+              { id: 'users', label: `Tài khoản (${adminUsers.length || 5})` },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "px-3.5 py-2 rounded-xl text-xs font-bold font-sans tabular-nums transition-all whitespace-nowrap",
+                  activeTab === tab.id
+                    ? "bg-[#191614] text-white shadow-xs"
+                    : "text-[#615C56] hover:bg-[#F5F3ED] hover:text-[#191614]"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
         </div>
       </div>
 

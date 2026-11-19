@@ -58,35 +58,15 @@ interface UserOrder {
   items: OrderItem[]
 }
 
-const availableVouchers = [
-  {
-    code: 'BOOKSTORE10',
-    title: 'Giảm 10% Tối Đa 50.000đ',
-    desc: 'Áp dụng cho mọi đơn hàng từ 150.000đ',
-    expiry: '31/12/2026',
-    tag: 'Độc giả mới & Thân thiết'
-  },
-  {
-    code: 'TRIENTHO20',
-    title: 'Giảm 20% Tối Đa 100.000đ',
-    desc: 'Ưu đãi đặc biệt mùa đọc sách cho đơn từ 300.000đ',
-    expiry: '31/12/2026',
-    tag: 'Tủ sách tinh hoa'
-  },
-  {
-    code: 'FREESHIP',
-    title: 'Miễn Phí Vận Chuyển Toàn Quốc',
-    desc: 'Miễn phí giao hàng tiêu chuẩn cho đơn từ 250.000đ',
-    expiry: '31/12/2026',
-    tag: 'Freeship Extra'
-  }
-]
+
 
 export default function ProfilePage() {
   const { user, isAuthenticated, updateUser, logout } = useAuthStore()
   const { items: wishlistBooks, removeFromWishlist } = useWishlistStore()
   const addToCart = useCartStore((s) => s.addItem)
   const location = useLocation()
+  const [availableVouchers, setAvailableVouchers] = useState<{ code: string; title: string; desc: string; expiry: string; tag: string }[]>([])
+  const [loyalty, setLoyalty] = useState<{ earned: number; used: number; balance: number; pointValue: number }>({ earned: 0, used: 0, balance: 0, pointValue: 100 })
 
   // Tab state: info | orders | addresses | wishlist | vouchers | password
   const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'addresses' | 'wishlist' | 'vouchers' | 'password'>(
@@ -151,9 +131,22 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
+    apiClient.get('/discounts').then(res => {
+      const fmt = (n?: number | null) => (n ?? 0).toLocaleString('vi-VN') + 'đ'
+      setAvailableVouchers((res.data || []).map((d: any) => ({
+        code: d.code,
+        title: `Giảm ${d.discountPercent}%${d.maxDiscountAmount ? ' tối đa ' + fmt(d.maxDiscountAmount) : ''}`,
+        desc: d.minOrderAmount ? `Áp dụng cho đơn từ ${fmt(d.minOrderAmount)}` : 'Áp dụng cho mọi đơn hàng',
+        expiry: new Date(d.endDate).toLocaleDateString('vi-VN'),
+        tag: d.usageLimit ? `Còn ${Math.max(0, d.usageLimit - d.timesUsed)} lượt` : 'Không giới hạn lượt',
+      })))
+    }).catch(() => setAvailableVouchers([]))
+  }, [])
+  useEffect(() => {
     if (isAuthenticated) {
       fetchProfile()
       fetchMyOrders()
+      apiClient.get('/orders/loyalty').then(r => setLoyalty(r.data)).catch(() => {})
     }
   }, [isAuthenticated])
 
@@ -409,8 +402,9 @@ export default function ProfilePage() {
             <div className="text-center sm:text-left">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#8C857B]">Điểm tích lũy</span>
               <div className="font-serif text-xl font-bold text-amber-700 mt-0.5">
-                850 điểm
+                {loyalty.balance.toLocaleString('vi-VN')} điểm
               </div>
+              <span className="text-[10px] text-[#8C857B] block mt-0.5">1 điểm = {loyalty.pointValue.toLocaleString('vi-VN')}đ · dùng khi thanh toán</span>
             </div>
             <div className="text-center sm:text-left">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#8C857B]">Sách yêu thích</span>

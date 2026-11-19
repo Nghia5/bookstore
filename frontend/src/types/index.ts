@@ -51,6 +51,8 @@ export interface CartItem {
   bookId: number
   book: Book
   quantity: number
+  addedAt?: string
+  selected?: boolean
 }
 
 export interface User {

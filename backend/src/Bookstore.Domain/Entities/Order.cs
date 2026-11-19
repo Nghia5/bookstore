@@ -14,6 +14,7 @@ public class Order
     public decimal ShippingFee { get; set; }
     public decimal FinalAmount { get; set; }
     public string? Note { get; set; }
+    public int PointsUsed { get; set; }
     public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;
