@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const login = useAuthStore((s) => s.login)
   const navigate = useNavigate()
+  const location = useLocation()
 
   const {
     register,
@@ -30,7 +31,7 @@ export default function LoginPage() {
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      email: (location.state as { email?: string } | null)?.email ?? '',
       password: '',
     },
   })
