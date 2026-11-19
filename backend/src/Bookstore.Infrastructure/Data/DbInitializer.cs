@@ -8,6 +8,63 @@ namespace Bookstore.Infrastructure.Data;
 
 public static class DbInitializer
 {
+    private static readonly System.Text.Json.JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    private static List<T> Read<T>(System.Text.Json.JsonElement root, string name) =>
+        root.TryGetProperty(name, out var el)
+            ? System.Text.Json.JsonSerializer.Deserialize<List<T>>(el.GetRawText(), JsonOpts) ?? new List<T>()
+            : new List<T>();
+
+    private static async Task<bool> SeedFromJsonAsync(BookstoreDbContext context)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "SeedData.json");
+        if (!File.Exists(path)) return false;
+
+        using var doc = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(path));
+        var root = doc.RootElement;
+        var now = DateTime.UtcNow;
+
+        var discounts = Read<Discount>(root, "Discounts");
+        // Vouchers are always valid at deploy time: start yesterday, expire in 60 days
+        foreach (var d in discounts) { d.StartDate = now.AddDays(-1); d.EndDate = now.AddDays(60); d.TimesUsed = 0; d.IsActive = true; }
+
+        var isSqlServer = context.Database.IsSqlServer();
+        async Task Insert<T>(List<T> items, string table, bool identity = true) where T : class
+        {
+            if (items.Count == 0) return;
+            if (isSqlServer && identity)
+            {
+                await using var tx = await context.Database.BeginTransactionAsync();
+                await context.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT [{table}] ON");
+                context.Set<T>().AddRange(items);
+                await context.SaveChangesAsync();
+                await context.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT [{table}] OFF");
+                await tx.CommitAsync();
+            }
+            else
+            {
+                context.Set<T>().AddRange(items);
+                await context.SaveChangesAsync();
+            }
+            context.ChangeTracker.Clear();
+        }
+
+        await Insert(Read<Category>(root, "Categories"), "Categories");
+        await Insert(Read<Publisher>(root, "Publishers"), "Publishers");
+        await Insert(Read<Author>(root, "Authors"), "Authors");
+        await Insert(Read<User>(root, "Users"), "Users");
+        await Insert(Read<Address>(root, "Addresses"), "Addresses");
+        await Insert(Read<Book>(root, "Books"), "Books");
+        await Insert(Read<BookAuthor>(root, "BookAuthors"), "BookAuthors", false);
+        await Insert(discounts, "Discounts");
+        await Insert(Read<GoodsReceipt>(root, "GoodsReceipts"), "GoodsReceipts");
+        await Insert(Read<GoodsReceiptItem>(root, "GoodsReceiptItems"), "GoodsReceiptItems");
+        await Insert(Read<Order>(root, "Orders"), "Orders");
+        await Insert(Read<OrderItem>(root, "OrderItems"), "OrderItems");
+        await Insert(Read<Payment>(root, "Payments"), "Payments");
+        await Insert(Read<Review>(root, "Reviews").GroupBy(r => new { r.UserId, r.BookId }).Select(g => g.First()).ToList(), "Reviews");
+        return true;
+    }
     public static async Task SeedAsync(BookstoreDbContext context)
     {
         await context.Database.EnsureCreatedAsync();
@@ -15,6 +72,11 @@ public static class DbInitializer
         if (await context.Books.AnyAsync())
         {
             return; // DB has been seeded
+        }
+
+        if (await SeedFromJsonAsync(context))
+        {
+            return; // Full dataset (1000 books, vouchers, receipts...) loaded
         }
 
         // 1. Seed Categories

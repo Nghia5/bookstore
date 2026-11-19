@@ -29,6 +29,7 @@ export default function AdminDiscountsTab() {
   const [maxAmount, setMaxAmount] = useState(50000)
   const [minAmount, setMinAmount] = useState(150000)
   const [usageLimit, setUsageLimit] = useState(200)
+  const [endDate, setEndDate] = useState(() => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
 
   const fetchDiscounts = async () => {
     try {
@@ -83,7 +84,7 @@ export default function AdminDiscountsTab() {
         minOrderAmount: minAmount > 0 ? Number(minAmount) : null,
         usageLimit: usageLimit > 0 ? Number(usageLimit) : null,
         startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() // 90 days validity
+        endDate: new Date(endDate + 'T23:59:59').toISOString()
       }
 
       const res = await apiClient.post('/admin/discounts', payload)
@@ -284,6 +285,18 @@ export default function AdminDiscountsTab() {
                     className="w-full font-sans tabular-nums rounded-xl border border-[#DDD6C4] p-2.5 outline-none focus:border-[#191614]"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-[#191614] block mb-1">Ngày hết hạn (mã tự xóa khi hết hạn hoặc hết lượt)</label>
+                <input
+                  type="date"
+                  required
+                  min={new Date().toISOString().slice(0, 10)}
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full font-sans tabular-nums rounded-xl border border-[#DDD6C4] p-2.5 outline-none focus:border-[#191614]"
+                />
               </div>
 
               <div className="pt-4 border-t border-[#EBE7DC] flex justify-end gap-3">

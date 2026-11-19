@@ -636,6 +636,7 @@ public class AdminController : ControllerBase
     [HttpGet("discounts")]
     public async Task<IActionResult> GetDiscounts()
     {
+        await Bookstore.Infrastructure.Data.DiscountCleanup.PurgeAsync(_context);
         var discounts = await _context.Discounts
             .OrderByDescending(d => d.Id)
             .Select(d => new

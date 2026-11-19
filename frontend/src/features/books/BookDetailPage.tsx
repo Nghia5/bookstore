@@ -8,6 +8,8 @@ import { formatPrice } from '@/lib/utils'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
 import { toast } from 'sonner'
+import { useWishlistStore } from '@/stores/wishlistStore'
+import { useRequireAuth } from '@/lib/useRequireAuth'
 import apiClient from '@/api/client'
 import type { Book } from '@/types'
 import BookPreviewModal from '@/components/BookPreviewModal'
@@ -59,6 +61,8 @@ export default function BookDetailPage() {
   const addItem = useCartStore((s) => s.addItem)
   const { appliedVoucherCode, setAppliedVoucher } = useCartStore()
   const { isAuthenticated, user } = useAuthStore()
+  const requireAuth = useRequireAuth()
+  const { isInWishlist, toggleWishlist } = useWishlistStore()
 
   // Book preview modal state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -135,11 +139,13 @@ export default function BookDetailPage() {
   }, [bookId])
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) { requireAuth(() => {}, 'Vui lòng đăng nhập để thêm sách vào giỏ hàng.'); return }
     addItem(book, quantity)
     toast.success(`Đã thêm ${quantity} cuốn "${book.title}" vào giỏ hàng`)
   }
 
   const handleBuyNow = () => {
+    if (!isAuthenticated) { requireAuth(() => {}, 'Vui lòng đăng nhập để mua hàng.'); return }
     addItem(book, quantity)
     toast.success(`Đã chọn "${book.title}"! Đang chuyển đến thanh toán...`)
     navigate('/cart')
@@ -173,7 +179,7 @@ export default function BookDetailPage() {
     : 0
 
   const avgRating = reviewsData?.averageRating ?? book.averageRating ?? 4.9
-  const totalReviewsCount = reviewsData?.totalReviews ?? (reviewsData?.items?.length || 2)
+  const totalReviewsCount = reviewsData?.totalReviews ?? (reviewsData?.items?.length || 0)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -422,11 +428,15 @@ export default function BookDetailPage() {
             </button>
 
             <button 
-              onClick={() => toast.success('Đã lưu vào danh sách yêu thích!')}
+              onClick={() => requireAuth(() => {
+                const fav = isInWishlist(book.id)
+                toggleWishlist(book)
+                toast.success(fav ? 'Đã bỏ khỏi danh sách yêu thích' : 'Đã lưu vào danh sách yêu thích!')
+              }, 'Vui lòng đăng nhập để thêm vào danh sách yêu thích.')}
               className="p-3.5 rounded-xl border border-[#DDD6C4] hover:bg-[#F5F3ED] text-[#B84A39] transition-colors flex items-center justify-center shrink-0"
               title="Thêm vào danh sách yêu thích"
             >
-              <Heart className="h-5 w-5" />
+              <Heart className={cn("h-5 w-5", isInWishlist(book.id) && "fill-current")} />
             </button>
           </div>
 
@@ -516,10 +526,7 @@ export default function BookDetailPage() {
 
         {/* Reviews List */}
         <div className="space-y-4 pt-2">
-          {((reviewsData?.items && reviewsData.items.length > 0) ? reviewsData.items : [
-            { id: 1, userName: "Nguyễn Hoàng", createdAt: "2026-11-10", rating: 5, comment: "Tác phẩm chạm đến trái tim, dịch thuật mượt mà và in ấn rất đẹp!" },
-            { id: 2, userName: "Lê Thị Thu", createdAt: "2026-11-05", rating: 5, comment: "Sách giao nhanh, bọc cẩn thận có tặng kèm bookmark xinh xắn." }
-          ]).map((r: any, idx: number) => (
+          {((reviewsData?.items) ?? []).map((r: any, idx: number) => (
             <div key={idx} className="border-b border-[#F5F3ED] pb-4 last:border-b-0 space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-sm text-[#191614]">{r.userName || 'Bạn đọc ẩn danh'}</span>

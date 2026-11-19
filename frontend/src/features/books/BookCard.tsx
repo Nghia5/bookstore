@@ -5,6 +5,7 @@ import { useCartStore } from '@/stores/cartStore'
 import { useWishlistStore } from '@/stores/wishlistStore'
 import type { Book } from '@/types'
 import { toast } from 'sonner'
+import { useRequireAuth } from '@/lib/useRequireAuth'
 
 // Curated authentic Vietnamese book covers
 const fallbackCovers = [
@@ -29,6 +30,7 @@ export default function BookCard({ book, rank }: BookCardProps) {
   const addItem = useCartStore((s) => s.addItem)
   const { isInWishlist, toggleWishlist } = useWishlistStore()
   const isFav = isInWishlist(book.id)
+  const requireAuth = useRequireAuth()
 
   const coverUrl = book.coverImageUrl || fallbackCovers[(book.id || 1) % fallbackCovers.length]
 
@@ -39,19 +41,23 @@ export default function BookCard({ book, rank }: BookCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    addItem(book, 1)
-    toast.success(`Đã thêm "${book.title}" vào giỏ hàng!`)
+    requireAuth(() => {
+      addItem(book, 1)
+      toast.success(`Đã thêm "${book.title}" vào giỏ hàng!`)
+    }, 'Vui lòng đăng nhập để thêm sách vào giỏ hàng.')
   }
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    toggleWishlist(book)
-    if (isFav) {
-      toast.success(`Đã bỏ "${book.title}" khỏi danh sách yêu thích`)
-    } else {
-      toast.success(`Đã thêm "${book.title}" vào danh sách yêu thích!`)
-    }
+    requireAuth(() => {
+      toggleWishlist(book)
+      if (isFav) {
+        toast.success(`Đã bỏ "${book.title}" khỏi danh sách yêu thích`)
+      } else {
+        toast.success(`Đã thêm "${book.title}" vào danh sách yêu thích!`)
+      }
+    }, 'Vui lòng đăng nhập để thêm vào danh sách yêu thích.')
   }
 
   const authorName = book.authors && book.authors.length > 0 

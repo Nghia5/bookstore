@@ -18,6 +18,7 @@ public class DiscountsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetActiveDiscounts()
     {
+        await DiscountCleanup.PurgeAsync(_context);
         var now = DateTime.UtcNow;
         var discounts = await _context.Discounts
             .Where(d => d.IsActive && d.StartDate <= now && d.EndDate >= now && (d.UsageLimit == null || d.TimesUsed < d.UsageLimit))
@@ -48,12 +49,13 @@ public class DiscountsController : ControllerBase
             return BadRequest(new { message = "Vui lòng nhập mã giảm giá." });
         }
 
+        await DiscountCleanup.PurgeAsync(_context);
         var code = request.Code.Trim().ToUpper();
         var discount = await _context.Discounts.FirstOrDefaultAsync(d => d.Code == code);
 
         if (discount == null)
         {
-            return NotFound(new { isValid = false, message = "Mã giảm giá không tồn tại." });
+            return NotFound(new { isValid = false, message = "Mã giảm giá không tồn tại hoặc đã hết hạn / hết lượt sử dụng." });
         }
 
         var now = DateTime.UtcNow;
