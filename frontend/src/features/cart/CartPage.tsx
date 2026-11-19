@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
   Minus, Plus, Trash2, ShoppingBag, ArrowLeft, BookOpen, 
-  CheckCircle, Truck, ShieldAlert, Tag, ArrowRight, User, Printer
+  CheckCircle, Truck, ShieldAlert, Tag, ArrowRight, User, Printer,
+  Check, Clock
 } from 'lucide-react'
 import { useCartStore } from '@/stores/cartStore'
 import { useAuthStore } from '@/stores/authStore'
-import { formatPrice } from '@/lib/utils'
+import { formatPrice, cn } from '@/lib/utils'
 import apiClient from '@/api/client'
 import { toast } from 'sonner'
 import InvoiceModal from '@/components/InvoiceModal'
@@ -278,45 +279,93 @@ export default function CartPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <Link to="/books" className="mb-2 inline-flex items-center gap-1.5 text-xs text-[#B84A39] hover:underline font-semibold">
             <ArrowLeft className="h-3.5 w-3.5" />
             Tiếp tục chọn sách
           </Link>
           <h1 className="font-serif text-3xl font-bold text-[#191614]">Giỏ hàng của bạn</h1>
-          <p className="mt-1 text-xs text-[#615C56]">Đang chọn {selectedItems.length}/{items.length} đầu sách để mua</p>
+          <p className="mt-1 text-xs text-[#615C56]">
+            {selectedItems.length > 0
+              ? `Đang chọn ${selectedItems.length}/${items.length} đầu sách để mua`
+              : `Chưa chọn đầu sách nào (Tổng ${items.length} sản phẩm trong giỏ)`}
+          </p>
         </div>
-        <label className="flex items-center gap-2 text-xs font-semibold text-[#191614] cursor-pointer">
-          <input type="checkbox" checked={allSelected} onChange={(e) => setAllSelected(e.target.checked)} className="h-4 w-4 accent-[#191614]" />
-          Chọn tất cả
-        </label>
-        <button
-          onClick={clearCart}
-          className="rounded-xl border border-red-200 px-3.5 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50"
-        >
-          Làm trống giỏ
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedItems.length > 0 && selectedItems.length < items.length && (
+            <button
+              onClick={removeSelected}
+              className="rounded-xl border border-red-200 px-3.5 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50"
+            >
+              Xóa các mục đã tick ({selectedItems.length})
+            </button>
+          )}
+          <button
+            onClick={clearCart}
+            className="rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold text-[#615C56] transition-colors hover:bg-gray-100"
+          >
+            Làm trống giỏ
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         
         {/* Cart Items List */}
         <div className="flex-1 space-y-3.5">
+          {/* Select all bar */}
+          <div className="flex items-center justify-between rounded-2xl border border-[#EBE7DC] bg-[#FAF9F5] p-3 px-4 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setAllSelected(!allSelected)}
+              className="flex items-center gap-3 text-xs font-bold text-[#191614] hover:text-[#B84A39] transition-colors cursor-pointer select-none"
+            >
+              <div
+                className={cn(
+                  "h-5 w-5 rounded-md border flex items-center justify-center transition-all",
+                  allSelected
+                    ? "bg-[#191614] border-[#191614] text-white shadow-xs"
+                    : "bg-white border-[#DDD6C4]"
+                )}
+              >
+                {allSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+              </div>
+              <span>Chọn tất cả ({selectedItems.length}/{items.length} đầu sách)</span>
+            </button>
+            <span className="text-[11px] text-[#8C857B]">
+              Tạm tính sách đã tick: <strong className="text-[#B84A39] font-bold font-sans tabular-nums">{formatPrice(subtotal)}</strong>
+            </span>
+          </div>
+
           {items.map((item) => {
             const price = item.book.salePrice ?? item.book.originalPrice
+            const isSelected = item.selected !== false
             return (
               <div
                 key={item.id}
-                className="flex gap-4 rounded-2xl border border-[#EBE7DC] bg-white p-4 shadow-xs hover:border-[#DDD6C4] transition-all"
+                className={cn(
+                  "flex gap-4 rounded-2xl border p-4 shadow-xs transition-all",
+                  isSelected
+                    ? "border-[#EBE7DC] bg-white hover:border-[#DDD6C4]"
+                    : "border-[#F0EDE6] bg-[#FAF9F5]/70 opacity-60"
+                )}
               >
-                <input
-                  type="checkbox"
-                  checked={item.selected !== false}
-                  onChange={() => toggleSelect(item.bookId)}
-                  title="Chọn mua sản phẩm này"
-                  className="h-4 w-4 mt-1 shrink-0 self-center accent-[#191614] cursor-pointer"
-                />
+                {/* Custom Checkbox Button */}
+                <button
+                  type="button"
+                  onClick={() => toggleSelect(item.bookId)}
+                  className={cn(
+                    "h-6 w-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer shrink-0 self-center",
+                    isSelected
+                      ? "bg-[#191614] border-[#191614] text-white shadow-xs"
+                      : "bg-white border-[#DDD6C4] hover:border-[#191614]"
+                  )}
+                  title={isSelected ? "Bỏ chọn sản phẩm này" : "Tick chọn mua sản phẩm này"}
+                >
+                  {isSelected && <Check className="h-4 w-4 stroke-[3]" />}
+                </button>
+
                 {/* Book Cover */}
                 <div className="h-28 w-20 shrink-0 overflow-hidden rounded-xl bg-[#F5F3ED] border border-[#DDD6C4]">
                   <img
@@ -342,9 +391,12 @@ export default function CartPage() {
                   <p className="text-xs text-[#615C56] mt-0.5 truncate">
                     {item.book.authors?.map((a) => a.name).join(', ') || 'Tác giả'}
                   </p>
-                  <p className="text-[11px] text-[#8C857B] mt-0.5 font-sans tabular-nums">
-                    Thêm vào giỏ lúc: {new Date(item.addedAt ?? item.id).toLocaleString('vi-VN')}
-                  </p>
+
+                  {/* Prominent Added Timestamp Badge */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F5F3ED] border border-[#EBE7DC] text-[#615C56] text-[11px] font-medium w-fit mt-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#B84A39]" />
+                    <span>Thời gian thêm vào giỏ: <strong className="text-[#191614] font-semibold tabular-nums">{new Date(item.addedAt ?? item.id).toLocaleTimeString('vi-VN')} {new Date(item.addedAt ?? item.id).toLocaleDateString('vi-VN')}</strong></span>
+                  </div>
 
                   <div className="mt-auto flex items-end justify-between pt-3">
                     {/* Quantity Selector */}
@@ -561,9 +613,15 @@ export default function CartPage() {
               /* User is authenticated, ready to proceed */
               <button 
                 onClick={() => setIsCheckingOut(true)}
-                className="mt-4 w-full rounded-xl bg-[#191614] py-3.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#B84A39] flex items-center justify-center gap-2"
+                disabled={selectedItems.length === 0}
+                className={cn(
+                  "mt-4 w-full rounded-xl py-3.5 text-sm font-semibold text-white shadow-md transition-all flex items-center justify-center gap-2",
+                  selectedItems.length > 0
+                    ? "bg-[#191614] hover:bg-[#B84A39]"
+                    : "bg-gray-300 cursor-not-allowed opacity-60 text-gray-500 shadow-none"
+                )}
               >
-                <span>Điền thông tin giao hàng</span>
+                <span>{selectedItems.length > 0 ? `Điền thông tin giao hàng (${selectedItems.length})` : 'Vui lòng tick chọn sách để mua'}</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             ) : (

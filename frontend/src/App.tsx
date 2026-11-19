@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
@@ -10,6 +11,7 @@ import LoginPage from './features/auth/LoginPage'
 import RegisterPage from './features/auth/RegisterPage'
 import AdminDashboard from './features/admin/AdminDashboard'
 import ProfilePage from './features/profile/ProfilePage'
+import { useAuthStore } from './stores/authStore'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +23,11 @@ const queryClient = new QueryClient({
 })
 
 export default function App() {
+  useEffect(() => {
+    // Validate session token on startup
+    useAuthStore.getState().checkSession()
+  }, [])
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

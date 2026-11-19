@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { 
   Star, ShoppingBag, ArrowLeft, Truck, ShieldCheck, RefreshCw, 
-  BookOpen, Heart, MessageSquare, Send, Sparkles, Ticket, Zap, Tag
+  BookOpen, Heart, MessageSquare, Send, Sparkles, Ticket, Zap, Tag,
+  CheckCircle
 } from 'lucide-react'
 import { formatPrice } from '@/lib/utils'
 import { useCartStore } from '@/stores/cartStore'
@@ -60,6 +61,7 @@ export default function BookDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const addItem = useCartStore((s) => s.addItem)
   const { appliedVoucherCode, setAppliedVoucher } = useCartStore()
+  const cartItem = useCartStore((s) => s.items.find((i) => i.bookId === book.id))
   const { isAuthenticated, user } = useAuthStore()
   const requireAuth = useRequireAuth()
   const [canReview, setCanReview] = useState(false)
@@ -142,7 +144,8 @@ export default function BookDetailPage() {
   const handleAddToCart = () => {
     if (!isAuthenticated) { requireAuth(() => {}, 'Vui lòng đăng nhập để thêm sách vào giỏ hàng.'); return }
     addItem(book, quantity)
-    toast.success(`Đã thêm ${quantity} cuốn "${book.title}" vào giỏ hàng`)
+    const timeStr = new Date().toLocaleTimeString('vi-VN')
+    toast.success(`Đã thêm ${quantity} cuốn "${book.title}" vào giỏ hàng lúc ${timeStr}!`)
   }
 
   const handleBuyNow = () => {
@@ -401,6 +404,16 @@ export default function BookDetailPage() {
               <div>Số trang: <strong className="text-[#191614] block mt-0.5 font-sans tabular-nums">{book.pageCount || 300} trang</strong></div>
               <div>Năm phát hành: <strong className="text-[#191614] block mt-0.5 font-sans tabular-nums">{book.publishYear || 2022}</strong></div>
             </div>
+
+            {/* Cart Presence Status */}
+            {cartItem && (
+              <div className="mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50/90 border border-emerald-300 text-xs text-emerald-950 font-medium">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  Đã có <strong>{cartItem.quantity}</strong> cuốn trong giỏ hàng (thêm lúc: <strong className="font-semibold tabular-nums">{new Date(cartItem.addedAt ?? cartItem.id).toLocaleTimeString('vi-VN')} {new Date(cartItem.addedAt ?? cartItem.id).toLocaleDateString('vi-VN')}</strong>)
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}

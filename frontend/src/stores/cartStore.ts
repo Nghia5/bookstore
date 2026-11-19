@@ -31,7 +31,9 @@ export const useCartStore = create<CartState>()(
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.bookId === book.id ? { ...i, quantity: i.quantity + quantity } : i
+                i.bookId === book.id
+                  ? { ...i, quantity: i.quantity + quantity, addedAt: new Date().toISOString(), selected: true }
+                  : i
               ),
             }
           }
@@ -50,7 +52,9 @@ export const useCartStore = create<CartState>()(
       clearCart: () => set({ items: [] }),
       toggleSelect: (bookId) =>
         set((state) => ({
-          items: state.items.map((i) => (i.bookId === bookId ? { ...i, selected: i.selected === false } : i)),
+          items: state.items.map((i) =>
+            i.bookId === bookId ? { ...i, selected: !(i.selected !== false) } : i
+          ),
         })),
       setAllSelected: (selected) =>
         set((state) => ({ items: state.items.map((i) => ({ ...i, selected })) })),

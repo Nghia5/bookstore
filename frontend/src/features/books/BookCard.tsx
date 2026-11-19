@@ -43,7 +43,8 @@ export default function BookCard({ book, rank }: BookCardProps) {
     e.stopPropagation()
     requireAuth(() => {
       addItem(book, 1)
-      toast.success(`Đã thêm "${book.title}" vào giỏ hàng!`)
+      const timeStr = new Date().toLocaleTimeString('vi-VN')
+      toast.success(`Đã thêm "${book.title}" vào giỏ hàng lúc ${timeStr}!`)
     }, 'Vui lòng đăng nhập để thêm sách vào giỏ hàng.')
   }
 

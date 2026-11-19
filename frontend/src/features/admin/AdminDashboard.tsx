@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   BookOpen, ShoppingCart, Users, DollarSign, Plus, 
   Search, Edit3, Trash2, 
@@ -145,10 +145,22 @@ interface AdminAuthor {
 }
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuthStore()
+  const { user, isAuthenticated, logout } = useAuthStore()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'Admin') {
+      toast.error('Khu vực dành riêng cho Quản trị viên. Vui lòng đăng nhập.')
+      navigate('/login?redirect=/admin')
+    }
+  }, [isAuthenticated, user, navigate])
 
   const [activeTab, setActiveTab] = useState<'overview' | 'books' | 'receipts' | 'discounts' | 'authors' | 'orders' | 'reviews' | 'users'>('overview')
   const [, setLoading] = useState(false)
+
+  if (!isAuthenticated || user?.role !== 'Admin') {
+    return null
+  }
 
   // Overview stats
   const [overview, setOverview] = useState<OverviewData | null>(null)
