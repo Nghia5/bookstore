@@ -13,10 +13,13 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import InvoiceModal from '@/components/InvoiceModal'
 import type { InvoiceData } from '@/components/InvoiceModal'
+import ShippingLabelModal from '@/components/ShippingLabelModal'
+import type { ShippingOrderData } from '@/components/ShippingLabelModal'
 import AdminReceiptsTab from './components/AdminReceiptsTab'
 import AdminDiscountsTab from './components/AdminDiscountsTab'
 import AdminReviewsTab from './components/AdminReviewsTab'
 import AdminAnalyticsSection from './components/AdminAnalyticsSection'
+import AdminCategoriesTab from './components/AdminCategoriesTab'
 
 export const ORDER_STATUS_CONFIG: Record<string, { label: string; badgeClass: string }> = {
   Pending: { 
@@ -155,7 +158,7 @@ export default function AdminDashboard() {
     }
   }, [isAuthenticated, user, navigate])
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'books' | 'receipts' | 'discounts' | 'authors' | 'orders' | 'reviews' | 'users'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'books' | 'categories' | 'receipts' | 'discounts' | 'authors' | 'orders' | 'reviews' | 'users'>('overview')
   const [, setLoading] = useState(false)
 
   if (!isAuthenticated || user?.role !== 'Admin') {
@@ -168,6 +171,10 @@ export default function AdminDashboard() {
   // Invoice modal state
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [selectedInvoiceData, setSelectedInvoiceData] = useState<InvoiceData | null>(null)
+
+  // Shipping label modal state (NEW)
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false)
+  const [selectedShippingOrder, setSelectedShippingOrder] = useState<ShippingOrderData | null>(null)
 
   // Books list state
   const [books, setBooks] = useState<AdminBook[]>([])
@@ -561,6 +568,7 @@ export default function AdminDashboard() {
             {[
               { id: 'overview', label: 'Tổng quan' },
               { id: 'books', label: `Kho Sách (${overview?.totalBooks ?? 1000})` },
+              { id: 'categories', label: 'Danh mục' },
               { id: 'receipts', label: `Nhập kho (${overview?.totalReceipts ?? 3})` },
               { id: 'discounts', label: `Khuyến mãi (${overview?.totalDiscounts ?? 6})` },
               { id: 'authors', label: `Tác giả (${authors.length || 40})` },
@@ -876,6 +884,16 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ===================== TAB: CATEGORIES MANAGEMENT (NEW!) ===================== */}
+        {activeTab === 'categories' && (
+          <AdminCategoriesTab
+            onSelectCategoryFilter={(catId) => {
+              setSelectedCategory(catId)
+              setActiveTab('books')
+            }}
+          />
+        )}
+
         {/* ===================== TAB 3: AUTHOR MANAGEMENT (NEW!) ===================== */}
         {activeTab === 'authors' && (
           <div className="space-y-4">
@@ -1138,6 +1156,31 @@ export default function AdminDashboard() {
                           >
                             <Printer className="w-3.5 h-3.5 text-[#B84A39]" />
                             <span>In Hóa Đơn</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedShippingOrder({
+                                orderCode: order.orderCode,
+                                orderDate: order.orderDate,
+                                customerName: order.customerName,
+                                customerPhone: order.customerPhone,
+                                shippingAddress: order.shippingAddress,
+                                paymentMethod: order.paymentMethod,
+                                status: order.status,
+                                items: order.items || [],
+                                totalAmount: order.totalAmount,
+                                discountAmount: order.discountAmount,
+                                shippingFee: order.shippingFee,
+                                finalAmount: order.finalAmount,
+                                note: order.note
+                              })
+                              setIsShippingModalOpen(true)
+                            }}
+                            className="px-3 py-1.5 rounded-xl border border-sky-300 bg-sky-50 hover:bg-sky-100 text-xs font-semibold text-sky-900 flex items-center gap-1.5 transition-colors shadow-2xs"
+                          >
+                            <Truck className="w-3.5 h-3.5 text-sky-700" />
+                            <span>In Vận Đơn</span>
                           </button>
 
                           {/* Quick Transitions */}
@@ -1941,6 +1984,13 @@ export default function AdminDashboard() {
         isOpen={isInvoiceOpen}
         onClose={() => setIsInvoiceOpen(false)}
         data={selectedInvoiceData}
+      />
+
+      {/* ===================== SHIPPING LABEL PRINT MODAL (NEW!) ===================== */}
+      <ShippingLabelModal
+        isOpen={isShippingModalOpen}
+        onClose={() => setIsShippingModalOpen(false)}
+        data={selectedShippingOrder}
       />
 
     </div>
