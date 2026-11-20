@@ -26,12 +26,12 @@ interface CategoryItem {
 const defaultCategories: CategoryItem[] = [
   { id: 0, name: 'Tất cả thể loại', bookCount: 1000 },
   { id: 1, name: 'Văn học', slug: 'van-hoc', bookCount: 225 },
-  { id: 2, name: 'Kinh tế & Kinh doanh', slug: 'kinh-te', bookCount: 200 },
-  { id: 3, name: 'Tâm lý & Kỹ năng sống', slug: 'tam-ly-ky-nang', bookCount: 190 },
-  { id: 4, name: 'Công nghệ & Lập trình', slug: 'cong-nghe-lap-trinh', bookCount: 155 },
-  { id: 5, name: 'Lịch sử & Triết học', slug: 'lich-su-triet-hoc', bookCount: 115 },
-  { id: 6, name: 'Văn học Thiếu nhi', slug: 'thieu-nhi', bookCount: 65 },
-  { id: 7, name: 'Khoa học & Vũ trụ', slug: 'khoa-hoc', bookCount: 50 },
+  { id: 2, name: 'Kinh tế', slug: 'kinh-te', bookCount: 200 },
+  { id: 3, name: 'Kỹ năng sống', slug: 'ky-nang-song', bookCount: 190 },
+  { id: 4, name: 'Công nghệ', slug: 'cong-nghe', bookCount: 155 },
+  { id: 5, name: 'Lịch sử', slug: 'lich-su', bookCount: 115 },
+  { id: 6, name: 'Thiếu nhi', slug: 'thieu-nhi', bookCount: 65 },
+  { id: 7, name: 'Khoa học', slug: 'khoa-hoc', bookCount: 50 },
 ]
 
 const priceRanges = [

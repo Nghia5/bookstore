@@ -24,6 +24,14 @@ const queryClient = new QueryClient({
 
 export default function App() {
   useEffect(() => {
+    // Purge any legacy persisted admin session so guest users start unauthenticated
+    if (typeof window !== 'undefined') {
+      try {
+        if (localStorage.getItem('auth-storage')) {
+          localStorage.removeItem('auth-storage')
+        }
+      } catch {}
+    }
     // Validate session token on startup
     useAuthStore.getState().checkSession()
   }, [])

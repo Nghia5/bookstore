@@ -39,6 +39,7 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: () => {
         localStorage.removeItem('accessToken')
+        localStorage.removeItem('bookstore_auth_v3')
         localStorage.removeItem('auth-storage')
         set({ user: null, token: null, isAuthenticated: false })
         if (typeof window !== 'undefined') window.location.assign('/')
@@ -51,11 +52,12 @@ export const useAuthStore = create<AuthState>()(
         const { token } = get()
         if (isTokenExpired(token)) {
           localStorage.removeItem('accessToken')
+          localStorage.removeItem('bookstore_auth_v3')
           localStorage.removeItem('auth-storage')
           set({ user: null, token: null, isAuthenticated: false })
         }
       },
     }),
-    { name: 'auth-storage' }
+    { name: 'bookstore_auth_v3' }
   )
 )

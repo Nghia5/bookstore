@@ -28,6 +28,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('accessToken')
+      localStorage.removeItem('bookstore_auth_v3')
       localStorage.removeItem('auth-storage')
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
         window.location.href = '/login'

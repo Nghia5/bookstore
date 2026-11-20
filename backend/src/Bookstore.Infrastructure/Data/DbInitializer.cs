@@ -65,17 +65,59 @@ public static class DbInitializer
         await Insert(Read<Review>(root, "Reviews").GroupBy(r => new { r.UserId, r.BookId }).Select(g => g.First()).ToList(), "Reviews");
         return true;
     }
+
+    private static async Task NormalizeCategoryNamesAsync(BookstoreDbContext context)
+    {
+        try
+        {
+            var map = new Dictionary<string, (string Name, string Slug)>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Kinh tế & Kinh doanh"] = ("Kinh tế", "kinh-te"),
+                ["Kinh tế & Đầu tư"] = ("Kinh tế", "kinh-te"),
+                ["Tâm lý & Kỹ năng sống"] = ("Kỹ năng sống", "ky-nang-song"),
+                ["Tâm lý & Kỹ năng"] = ("Kỹ năng sống", "ky-nang-song"),
+                ["Công nghệ & Lập trình"] = ("Công nghệ", "cong-nghe"),
+                ["Lịch sử & Triết học"] = ("Lịch sử", "lich-su"),
+                ["Văn học Thiếu nhi"] = ("Thiếu nhi", "thieu-nhi"),
+                ["Khoa học & Vũ trụ"] = ("Khoa học", "khoa-hoc")
+            };
+
+            var categories = await context.Categories.ToListAsync();
+            bool changed = false;
+            foreach (var c in categories)
+            {
+                if (map.TryGetValue(c.Name, out var target))
+                {
+                    if (c.Name != target.Name || c.Slug != target.Slug)
+                    {
+                        c.Name = target.Name;
+                        c.Slug = target.Slug;
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed)
+            {
+                await context.SaveChangesAsync();
+            }
+        }
+        catch { }
+    }
+
     public static async Task SeedAsync(BookstoreDbContext context)
     {
         await context.Database.EnsureCreatedAsync();
 
         if (await context.Books.AnyAsync())
         {
+            await NormalizeCategoryNamesAsync(context);
             return; // DB has been seeded
         }
 
         if (await SeedFromJsonAsync(context))
         {
+            await NormalizeCategoryNamesAsync(context);
             return; // Full dataset (1000 books, vouchers, receipts...) loaded
         }
 

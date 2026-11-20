@@ -19,6 +19,7 @@ export default function Header() {
     { to: '/books?category=1', label: 'Văn học' },
     { to: '/books?category=2', label: 'Kinh tế' },
     { to: '/books?category=3', label: 'Kỹ năng sống' },
+    { to: '/books?category=4', label: 'Công nghệ' },
   ]
 
   const handleSearch = (e: React.FormEvent) => {
