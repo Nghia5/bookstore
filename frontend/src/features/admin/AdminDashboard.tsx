@@ -257,6 +257,7 @@ export default function AdminDashboard() {
       const params: any = { page: bookPage, pageSize: 25 }
       if (searchQuery.trim()) params.search = searchQuery.trim()
       if (selectedCategory) params.categoryId = selectedCategory
+      if (favoriteSort) params.sortBy = 'favorites'
 
       const res = await apiClient.get('/admin/books', { params })
       setBooks(res.data.items || [])
@@ -370,7 +371,7 @@ export default function AdminDashboard() {
       const timer = setTimeout(() => { fetchUsers() }, 250)
       return () => clearTimeout(timer)
     }
-  }, [activeTab, bookPage, selectedCategory, searchQuery, authorSearch, userSearch, orderStatusFilter])
+  }, [activeTab, bookPage, selectedCategory, searchQuery, authorSearch, userSearch, orderStatusFilter, favoriteSort])
 
   // Book Handlers
   const handleSaveBook = async (e: React.FormEvent) => {
@@ -908,7 +909,9 @@ export default function AdminDashboard() {
                       {(favoritesOverview?.topFavoritedBooks || []).map((book, idx) => (
                         <div
                           key={book.id}
-                          className="bg-white rounded-xl border border-rose-100/90 p-3 shadow-2xs hover:shadow-sm hover:border-rose-300 transition-all flex flex-col relative group"
+                          onClick={() => setFavoriteSort(true)}
+                          className="bg-white rounded-xl border border-rose-100/90 p-3 shadow-2xs hover:shadow-sm hover:border-rose-300 transition-all flex flex-col relative group cursor-pointer"
+                          title="Bấm để xem danh sách xếp theo yêu thích"
                         >
                           <div className="absolute top-2 left-2 z-10">
                             <span className={cn(

@@ -114,14 +114,19 @@ public class AdminController : ControllerBase
     [HttpGet("books/favorites-overview")]
     public async Task<IActionResult> GetFavoritesOverview()
     {
-        var topBooksRaw = await _context.Books
+        var topIds = new[] { 18, 31, 11, 24, 37 };
+        var topBooks = await _context.Books
             .Include(b => b.Category)
             .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
-            .Where(b => b.IsAvailable)
-            .Take(40)
+            .Where(b => topIds.Contains(b.Id))
+            .ToListAsync();
+
+        var topFavoritedBooks = topIds
+            .Select(id => topBooks.FirstOrDefault(b => b.Id == id))
+            .Where(b => b != null)
             .Select(b => new
             {
-                b.Id,
+                b!.Id,
                 b.Title,
                 b.CoverImageUrl,
                 b.OriginalPrice,
@@ -129,13 +134,11 @@ public class AdminController : ControllerBase
                 b.StockQuantity,
                 CategoryName = b.Category != null ? b.Category.Name : "Sách chọn lọc",
                 AuthorNames = string.Join(", ", b.BookAuthors.Select(ba => ba.Author.Name)),
-                FavoriteCount = 25 + ((b.Id * 19 + 31) % 125)
+                FavoriteCount = b.Id == 18 ? 148 :
+                                b.Id == 31 ? 145 :
+                                b.Id == 11 ? 140 :
+                                b.Id == 24 ? 137 : 134
             })
-            .ToListAsync();
-
-        var topFavoritedBooks = topBooksRaw
-            .OrderByDescending(b => b.FavoriteCount)
-            .Take(5)
             .ToList();
 
         var totalFavorites = 1248 + (_context.Books.Count(b => b.IsAvailable) * 3);
@@ -154,6 +157,7 @@ public class AdminController : ControllerBase
         [FromQuery] string? search,
         [FromQuery] int? categoryId,
         [FromQuery] int? authorId,
+        [FromQuery] string? sortBy,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
@@ -183,8 +187,24 @@ public class AdminController : ControllerBase
         }
 
         var totalCount = await query.CountAsync();
+
+        if (string.Equals(sortBy, "favorites", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.OrderByDescending(b => 
+                b.Id == 18 ? 148 :
+                b.Id == 31 ? 145 :
+                b.Id == 11 ? 140 :
+                b.Id == 24 ? 137 :
+                b.Id == 37 ? 134 :
+                (20 + ((b.Id * 17 + 29) % 110))
+            ).ThenBy(b => b.Id);
+        }
+        else
+        {
+            query = query.OrderByDescending(b => b.Id);
+        }
+
         var items = await query
-            .OrderByDescending(b => b.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(b => new
@@ -201,7 +221,12 @@ public class AdminController : ControllerBase
                 b.CategoryId,
                 CategoryName = b.Category != null ? b.Category.Name : "Chưa phân loại",
                 AuthorNames = string.Join(", ", b.BookAuthors.Select(ba => ba.Author.Name)),
-                FavoriteCount = 25 + ((b.Id * 19 + 31) % 125)
+                FavoriteCount = b.Id == 18 ? 148 :
+                                b.Id == 31 ? 145 :
+                                b.Id == 11 ? 140 :
+                                b.Id == 24 ? 137 :
+                                b.Id == 37 ? 134 :
+                                (20 + ((b.Id * 17 + 29) % 110))
             })
             .ToListAsync();
 
@@ -663,7 +688,12 @@ public class AdminController : ControllerBase
                 b.IsAvailable,
                 CategoryName = b.Category != null ? b.Category.Name : "Chưa phân loại",
                 AuthorNames = string.Join(", ", b.BookAuthors.Select(ba => ba.Author.Name)),
-                FavoriteCount = 25 + ((b.Id * 19 + 31) % 125)
+                FavoriteCount = b.Id == 18 ? 148 :
+                                b.Id == 31 ? 145 :
+                                b.Id == 11 ? 140 :
+                                b.Id == 24 ? 137 :
+                                b.Id == 37 ? 134 :
+                                (20 + ((b.Id * 17 + 29) % 110))
             })
             .ToListAsync();
 
