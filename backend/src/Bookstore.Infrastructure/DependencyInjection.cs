@@ -11,23 +11,29 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connStr = configuration.GetConnectionString("DefaultConnection");
-        var isProduction = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production";
-
-        // If no connection string is provided, or if in Production with a localhost connection string (e.g. Render cloud), fallback to SQLite
-        bool shouldUseSqlite = string.IsNullOrWhiteSpace(connStr) ||
-                               connStr.Contains(".db", StringComparison.OrdinalIgnoreCase) ||
-                               (isProduction && connStr.Contains("localhost", StringComparison.OrdinalIgnoreCase));
+        var connStr = configuration.GetConnectionString("DefaultConnection") ?? "";
 
         services.AddDbContext<BookstoreDbContext>(options =>
         {
-            if (shouldUseSqlite)
+            if (connStr.Contains("Host=", StringComparison.OrdinalIgnoreCase) ||
+                connStr.Contains("postgres", StringComparison.OrdinalIgnoreCase) ||
+                connStr.Contains("sslmode=", StringComparison.OrdinalIgnoreCase))
             {
-                options.UseSqlite("Data Source=bookstore.db");
+                // Managed PostgreSQL (Render managed DB, Supabase, Neon, AWS RDS, etc.)
+                options.UseNpgsql(connStr);
+            }
+            else if (!string.IsNullOrWhiteSpace(connStr) &&
+                     !connStr.Contains(".db", StringComparison.OrdinalIgnoreCase) &&
+                     (connStr.Contains("Server=", StringComparison.OrdinalIgnoreCase) ||
+                      (connStr.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) && connStr.Contains("User", StringComparison.OrdinalIgnoreCase))))
+            {
+                // SQL Server
+                options.UseSqlServer(connStr, sqlOptions => sqlOptions.MigrationsAssembly(typeof(BookstoreDbContext).Assembly.FullName));
             }
             else
             {
-                options.UseSqlServer(connStr, sqlOptions => sqlOptions.MigrationsAssembly(typeof(BookstoreDbContext).Assembly.FullName));
+                // Fallback: SQLite for local offline development
+                options.UseSqlite(connStr.Contains(".db") ? connStr : "Data Source=bookstore.db");
             }
         });
 

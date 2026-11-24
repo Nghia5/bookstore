@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Verify Solution
+    name: Build, Test & Verify
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,12 @@ jobs:
       - name: Build Backend Solution
         run: dotnet build backend/src/Bookstore.API/Bookstore.API.csproj -c Release --no-restore
 
+      - name: Restore Test Dependencies
+        run: dotnet restore backend/tests/Bookstore.Tests/Bookstore.Tests.csproj
+
+      - name: Run Backend Automated Unit Tests (xUnit)
+        run: dotnet test backend/tests/Bookstore.Tests/Bookstore.Tests.csproj -c Release --no-restore --verbosity normal
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -40,3 +46,11 @@ jobs:
       - name: Lint and Build Frontend Vite SPA
         working-directory: ./frontend
         run: npm run build
+
+      - name: Trigger Render Deploy Hook (If Configured)
+        if: github.ref == 'refs/heads/main' && success() && env.RENDER_DEPLOY_HOOK != ''
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          echo "Calling Render Deploy Hook after CI success..."
+          curl -X POST "$RENDER_DEPLOY_HOOK"

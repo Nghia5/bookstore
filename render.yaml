@@ -7,12 +7,15 @@ services:
     dockerContext: ./backend
     plan: free
     region: singapore
+    autoDeploy: false
+    healthCheckPath: /health
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       - key: ConnectionStrings__DefaultConnection
         sync: false
-    healthCheckPath: /health
+      - key: JwtSettings__Key
+        sync: false
 
   # 2. Frontend Static Site (100% Free CDN, SPA Client-Side Routing)
   - type: static
@@ -21,6 +24,7 @@ services:
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
+    autoDeploy: false
     routes:
       - type: rewrite
         source: /*

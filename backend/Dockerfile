@@ -13,7 +13,7 @@ RUN dotnet restore "src/Bookstore.API/Bookstore.API.csproj"
 # Copy source code and build
 COPY . .
 WORKDIR "/src/src/Bookstore.API"
-RUN dotnet publish "Bookstore.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Bookstore.API.csproj" -c Release -r linux-x64 --no-self-contained -o /app/publish /p:UseAppHost=false
 
 # Stage 2: Final runtime container
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final

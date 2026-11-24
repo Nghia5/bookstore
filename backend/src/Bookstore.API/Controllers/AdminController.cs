@@ -1,6 +1,7 @@
 using Bookstore.Domain.Entities;
 using Bookstore.Domain.Enums;
 using Bookstore.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace Bookstore.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {
     private readonly BookstoreDbContext _context;
