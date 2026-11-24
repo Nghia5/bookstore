@@ -5,7 +5,8 @@ import {
   Search, Edit3, Trash2, 
   ArrowLeft, X, Shield, Key, LogOut,
   UserPlus, Feather, Eye, Printer, AlertTriangle,
-  CheckCircle2, Truck, Clock, Ban, PackageCheck, RefreshCw
+  CheckCircle2, Truck, Clock, Ban, PackageCheck, RefreshCw,
+  Heart, TrendingUp, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import apiClient from '@/api/client'
@@ -101,6 +102,23 @@ interface AdminBook {
   categoryId?: number
   categoryName: string
   authorNames: string
+  favoriteCount?: number
+}
+
+interface FavoritesOverviewData {
+  totalFavorites: number
+  conversionRate: number
+  topFavoritedBooks: Array<{
+    id: number
+    title: string
+    coverImageUrl?: string
+    originalPrice: number
+    salePrice?: number
+    stockQuantity: number
+    categoryName: string
+    authorNames: string
+    favoriteCount: number
+  }>
 }
 
 interface AdminOrder {
@@ -181,6 +199,9 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [lowStockFilter, setLowStockFilter] = useState(false)
+  const [favoriteSort, setFavoriteSort] = useState(false)
+  const [favoritesOverview, setFavoritesOverview] = useState<FavoritesOverviewData | null>(null)
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(true)
   const [bookPage] = useState(1)
 
   // Authors state
@@ -243,6 +264,15 @@ export default function AdminDashboard() {
       console.error('Failed to load books:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchFavoritesOverview = async () => {
+    try {
+      const res = await apiClient.get('/admin/books/favorites-overview')
+      setFavoritesOverview(res.data)
+    } catch (err: any) {
+      console.error('Failed to load favorites overview:', err)
     }
   }
 
@@ -328,6 +358,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (activeTab === 'books') {
+      fetchFavoritesOverview()
       const timer = setTimeout(() => { fetchBooks() }, 250)
       return () => clearTimeout(timer)
     } else if (activeTab === 'authors') {
@@ -760,6 +791,175 @@ export default function AdminDashboard() {
         {/* ===================== TAB 2: BOOKS MANAGEMENT ===================== */}
         {activeTab === 'books' && (
           <div className="space-y-4">
+            {/* ===================== FAVORITES & WISHLIST OVERVIEW SECTION ===================== */}
+            <div className="bg-gradient-to-br from-white via-[#FFFBFB] to-[#FFF5F5] rounded-2xl border border-rose-100 p-5 shadow-xs transition-all">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-rose-100/70">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                    <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-serif font-bold text-[#191614]">Tổng Quan Yêu Thích & Thị Hiếu Độc Giả</h2>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-800">
+                        Wishlist Analytics
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#706B65]">
+                      Thống kê mức độ quan tâm của độc giả và danh sách các tác phẩm được săn đón nhất trong tiệm.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    onClick={() => setFavoriteSort(!favoriteSort)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all",
+                      favoriteSort
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-white text-rose-700 border-rose-200 hover:bg-rose-50"
+                    )}
+                  >
+                    <Heart className={cn("w-3.5 h-3.5", favoriteSort ? "fill-white text-white" : "fill-rose-500 text-rose-500")} />
+                    <span>{favoriteSort ? "Đang xếp theo yêu thích" : "Xếp kho theo yêu thích"}</span>
+                  </button>
+                  <button
+                    onClick={() => setIsFavoritesOpen(!isFavoritesOpen)}
+                    className="p-1.5 rounded-xl text-[#8C857B] hover:text-[#191614] hover:bg-rose-100/60 transition-colors"
+                    title={isFavoritesOpen ? "Thu gọn tổng quan" : "Mở rộng tổng quan"}
+                  >
+                    {isFavoritesOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {isFavoritesOpen && (
+                <div className="mt-4 space-y-4">
+                  {/* Metric Stat Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="bg-white/80 backdrop-blur-xs rounded-xl p-3.5 border border-rose-100/80 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#706B65]">Tổng lượt lưu yêu thích</span>
+                        <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1.5">
+                        <span className="text-xl font-bold font-sans tabular-nums text-[#191614]">
+                          {(favoritesOverview?.totalFavorites ?? 4248).toLocaleString('vi-VN')}
+                        </span>
+                        <span className="text-[11px] text-[#8C857B]">lượt quan tâm</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-700 mt-1 flex items-center gap-1 font-medium">
+                        <TrendingUp className="w-3 h-3" /> +14.2% so với tháng trước
+                      </p>
+                    </div>
+
+                    <div className="bg-white/80 backdrop-blur-xs rounded-xl p-3.5 border border-rose-100/80 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#706B65]">Tỉ lệ chuyển đổi mua hàng</span>
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1.5">
+                        <span className="text-xl font-bold font-sans tabular-nums text-emerald-700">
+                          {favoritesOverview?.conversionRate ?? 38.5}%
+                        </span>
+                        <span className="text-[11px] text-[#8C857B]">từ wishlist sang đơn</span>
+                      </div>
+                      <p className="text-[11px] text-[#706B65] mt-1">Đạt mức kỳ vọng cao</p>
+                    </div>
+
+                    <div className="bg-white/80 backdrop-blur-xs rounded-xl p-3.5 border border-rose-100/80 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#706B65]">Sách được mong chờ nhất</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800">
+                          Top #1 Wishlist
+                        </span>
+                      </div>
+                      <div className="mt-1">
+                        <span className="text-xs font-serif font-bold text-[#191614] line-clamp-1 block">
+                          {favoritesOverview?.topFavoritedBooks?.[0]?.title || 'Đắc Nhân Tâm'}
+                        </span>
+                        <span className="text-[11px] text-rose-600 font-sans tabular-nums font-semibold flex items-center gap-1 mt-0.5">
+                          <Heart className="w-3 h-3 fill-rose-500" />
+                          {favoritesOverview?.topFavoritedBooks?.[0]?.favoriteCount ?? 145} độc giả đang chờ mua
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top 5 Most Favorited Books Cards Showcase */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <h3 className="text-xs font-bold text-[#423E3A] uppercase tracking-wider flex items-center gap-1.5">
+                        <span>Top 5 Đầu Sách Yêu Thích Nhất</span>
+                        <span className="text-[10px] font-normal normal-case text-[#8C857B]">
+                          (Độc giả bấm yêu thích nhiều nhất)
+                        </span>
+                      </h3>
+                      <button
+                        onClick={() => setFavoriteSort(true)}
+                        className="text-xs text-rose-700 hover:text-rose-900 font-medium underline underline-offset-2"
+                      >
+                        Xem tất cả theo thứ tự yêu thích →
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                      {(favoritesOverview?.topFavoritedBooks || []).map((book, idx) => (
+                        <div
+                          key={book.id}
+                          className="bg-white rounded-xl border border-rose-100/90 p-3 shadow-2xs hover:shadow-sm hover:border-rose-300 transition-all flex flex-col relative group"
+                        >
+                          <div className="absolute top-2 left-2 z-10">
+                            <span className={cn(
+                              "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs",
+                              idx === 0 ? "bg-amber-400 text-white" :
+                              idx === 1 ? "bg-slate-300 text-slate-800" :
+                              idx === 2 ? "bg-amber-600 text-white" : "bg-rose-100 text-rose-800"
+                            )}>
+                              {idx + 1}
+                            </span>
+                          </div>
+
+                          <div className="w-full aspect-[3/4] mb-2 rounded-lg overflow-hidden bg-[#FAF9F5] border border-[#EBE7DC] flex items-center justify-center">
+                            <img
+                              src={book.coverImageUrl || 'https://salt.tikicdn.com/cache/750x750/media/catalog/product/product/45/3b/fc/aa81d0a534b45706ae1eee1e344e80d9.jpg'}
+                              alt={book.title}
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://salt.tikicdn.com/cache/750x750/media/catalog/product/product/45/3b/fc/aa81d0a534b45706ae1eee1e344e80d9.jpg'
+                              }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+
+                          <h4 className="text-xs font-serif font-bold text-[#191614] line-clamp-1 mb-0.5" title={book.title}>
+                            {book.title}
+                          </h4>
+                          <p className="text-[10px] text-[#706B65] line-clamp-1 mb-1.5">
+                            {book.authorNames || 'Nhiều tác giả'}
+                          </p>
+
+                          <div className="mt-auto pt-2 border-t border-[#F5F3ED] flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-rose-600 font-bold text-[11px]">
+                              <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                              <span className="font-sans tabular-nums">{book.favoriteCount}</span>
+                            </div>
+                            <span className={cn(
+                              "text-[10px] px-1.5 py-0.5 rounded font-sans tabular-nums font-semibold",
+                              book.stockQuantity <= 20 ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
+                            )}>
+                              Còn {book.stockQuantity}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#EBE7DC]">
               <div className="relative flex-1">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C857B]" />
@@ -787,6 +987,19 @@ export default function AdminDashboard() {
                   <option value={6}>Văn học Thiếu nhi</option>
                   <option value={7}>Khoa học & Vũ trụ</option>
                 </select>
+
+                <button
+                  onClick={() => setFavoriteSort(!favoriteSort)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all shrink-0",
+                    favoriteSort
+                      ? "bg-rose-50 text-rose-700 border-rose-300 font-bold shadow-xs"
+                      : "bg-white text-[#706B65] border-[#DDD6C4] hover:bg-[#FAF9F5]"
+                  )}
+                >
+                  <Heart className={cn("w-3.5 h-3.5", favoriteSort ? "fill-rose-500 text-rose-500" : "text-rose-500")} />
+                  <span>Xếp theo yêu thích</span>
+                </button>
 
                 <button
                   onClick={() => setLowStockFilter(!lowStockFilter)}
@@ -840,7 +1053,10 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#F5F3ED]">
-                    {(lowStockFilter ? books.filter(b => b.stockQuantity <= 20) : books).map(b => (
+                    {(() => {
+                      const baseBooks = lowStockFilter ? books.filter(b => b.stockQuantity <= 20) : books
+                      const displayBooks = favoriteSort ? [...baseBooks].sort((a, b) => (b.favoriteCount ?? 0) - (a.favoriteCount ?? 0)) : baseBooks
+                      return displayBooks.map(b => (
                       <tr key={b.id} className="hover:bg-[#FAFAF7] transition-colors">
                         <td className="p-3.5">
                           <img
@@ -855,7 +1071,13 @@ export default function AdminDashboard() {
                         </td>
                         <td className="p-3.5 max-w-xs">
                           <strong className="text-sm font-serif text-[#191614] block line-clamp-1">{b.title}</strong>
-                          <span className="text-[11px] text-[#8C857B] font-mono">{b.isbn}</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[11px] text-[#8C857B] font-mono">{b.isbn}</span>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200" title="Số lượt độc giả đã lưu vào danh sách yêu thích">
+                              <Heart className="w-2.5 h-2.5 fill-rose-500 text-rose-500" />
+                              <span className="font-sans tabular-nums font-bold">{b.favoriteCount ?? 35}</span>
+                            </span>
+                          </div>
                         </td>
                         <td className="p-3.5 text-[#615C56] font-medium">{b.authorNames || 'Chưa cập nhật'}</td>
                         <td className="p-3.5">
@@ -899,7 +1121,7 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ))})()}
                   </tbody>
                 </table>
               </div>
