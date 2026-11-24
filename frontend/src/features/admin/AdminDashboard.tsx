@@ -246,6 +246,20 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleDeleteBook = async (book: AdminBook) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa cuốn sách "${book.title}" khỏi hệ thống?`)) return
+
+    try {
+      const res = await apiClient.delete(`/admin/books/${book.id}`)
+      toast.success(res.data?.message || `Đã xóa sách "${book.title}" thành công!`)
+      setBooks(prev => prev.filter(b => b.id !== book.id))
+      fetchBooks()
+      fetchOverview()
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể xóa cuốn sách này.')
+    }
+  }
+
   // 3. Fetch Authors
   const fetchAuthors = async () => {
     try {
@@ -862,18 +876,27 @@ export default function AdminDashboard() {
                             {b.stockQuantity} cuốn
                           </span>
                         </td>
-                        <td className="p-3.5 text-right">
-                          <button
-                            onClick={() => {
-                              setEditingBook(b)
-                              setNewAuthorName(b.authorNames)
-                              setIsModalOpen(true)
-                            }}
-                            className="p-1.5 rounded-lg text-[#706B65] hover:text-[#191614] hover:bg-[#F5F3ED]"
-                            title="Sửa sách"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
+                        <td className="p-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingBook(b)
+                                setNewAuthorName(b.authorNames)
+                                setIsModalOpen(true)
+                              }}
+                              className="p-1.5 rounded-lg text-[#706B65] hover:text-[#191614] hover:bg-[#F5F3ED] transition-colors"
+                              title="Sửa sách"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBook(b)}
+                              className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+                              title="Xóa sách"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1937,6 +1960,24 @@ export default function AdminDashboard() {
                               title="Sửa sách"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Bạn có chắc chắn muốn xóa cuốn sách "${book.title}" khỏi hệ thống?`)) return
+                                try {
+                                  const res = await apiClient.delete(`/admin/books/${book.id}`)
+                                  toast.success(res.data?.message || `Đã xóa sách "${book.title}" thành công!`)
+                                  setAuthorBooksList(prev => prev.filter(b => b.id !== book.id))
+                                  fetchBooks()
+                                  fetchOverview()
+                                } catch (err: any) {
+                                  toast.error(err.response?.data?.message || 'Không thể xóa cuốn sách này.')
+                                }
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700 transition-colors"
+                              title="Xóa sách"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                             <Link 
                               to={`/books/${book.id}`} 

@@ -20,11 +20,11 @@ public class AdminController : ControllerBase
     [HttpGet("overview")]
     public async Task<IActionResult> GetOverview()
     {
-        var totalBooks = await _context.Books.CountAsync();
+        var totalBooks = await _context.Books.CountAsync(b => b.IsAvailable);
         var totalOrders = await _context.Orders.CountAsync();
         var totalUsers = await _context.Users.CountAsync();
-        var totalStock = await _context.Books.SumAsync(b => b.StockQuantity);
-        var lowStockBooks = await _context.Books.CountAsync(b => b.StockQuantity <= 20);
+        var totalStock = await _context.Books.Where(b => b.IsAvailable).SumAsync(b => b.StockQuantity);
+        var lowStockBooks = await _context.Books.CountAsync(b => b.IsAvailable && b.StockQuantity <= 20);
         var totalRevenue = await _context.Orders
             .Where(o => o.Status != OrderStatus.Cancelled)
             .SumAsync(o => (decimal?)o.FinalAmount) ?? 0;
@@ -122,6 +122,7 @@ public class AdminController : ControllerBase
         var query = _context.Books
             .Include(b => b.Category)
             .Include(b => b.BookAuthors).ThenInclude(ba => ba.Author)
+            .Where(b => b.IsAvailable)
             .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -247,17 +248,29 @@ public class AdminController : ControllerBase
     [HttpDelete("books/{id:int}")]
     public async Task<IActionResult> DeleteBook(int id)
     {
-        var book = await _context.Books.FindAsync(id);
+        var book = await _context.Books
+            .Include(b => b.OrderItems)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
         if (book == null)
         {
-            return NotFound(new { message = "Không tìm thấy sách." });
+            return NotFound(new { message = "Không tìm thấy cuốn sách cần xóa." });
         }
 
-        // Soft delete or hide from catalog
-        book.IsAvailable = false;
+        var hasOrders = book.OrderItems != null && book.OrderItems.Any();
+        var hasReceipts = await _context.GoodsReceiptItems.AnyAsync(gri => gri.BookId == id);
+
+        if (hasOrders || hasReceipts)
+        {
+            book.IsAvailable = false;
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"Sách '{book.Title}' đã có lịch sử giao dịch nên đã được chuyển sang trạng thái Ngừng kinh doanh (đã ẩn)." });
+        }
+
+        _context.Books.Remove(book);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Đã ẩn sách khỏi danh mục bán hàng thành công!" });
+        return Ok(new { message = $"Đã xóa thành công cuốn sách '{book.Title}'!" });
     }
 
     [HttpGet("orders")]
