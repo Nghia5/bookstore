@@ -31,7 +31,7 @@ public class BookstoreDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        var utcDateSql = Database.IsSqlite() ? "CURRENT_TIMESTAMP" : "GETUTCDATE()";
+        var utcDateSql = Database.IsSqlServer() ? "GETUTCDATE()" : "CURRENT_TIMESTAMP";
 
         // ── User ──
         modelBuilder.Entity<User>(entity =>

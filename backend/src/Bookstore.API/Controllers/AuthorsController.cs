@@ -25,9 +25,18 @@ public class AuthorsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim();
-            query = query.Where(a => 
-                EF.Functions.Like(EF.Functions.Collate(a.Name, "SQL_Latin1_General_CP1_CI_AI"), $"%{s}%")
-                || (a.Nationality != null && EF.Functions.Like(EF.Functions.Collate(a.Nationality, "SQL_Latin1_General_CP1_CI_AI"), $"%{s}%")));
+            if (_context.Database.IsSqlServer())
+            {
+                query = query.Where(a => 
+                    EF.Functions.Like(EF.Functions.Collate(a.Name, "SQL_Latin1_General_CP1_CI_AI"), $"%{s}%")
+                    || (a.Nationality != null && EF.Functions.Like(EF.Functions.Collate(a.Nationality, "SQL_Latin1_General_CP1_CI_AI"), $"%{s}%")));
+            }
+            else
+            {
+                query = query.Where(a => 
+                    EF.Functions.Like(a.Name, $"%{s}%")
+                    || (a.Nationality != null && EF.Functions.Like(a.Nationality, $"%{s}%")));
+            }
         }
 
         var authors = await query

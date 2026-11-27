@@ -38,10 +38,20 @@ public class BooksController : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim();
-            query = query.Where(b => 
-                EF.Functions.Like(EF.Functions.Collate(b.Title, "SQL_Latin1_General_CP1_CI_AI"), $"%{s}%")
-                || b.ISBN.Contains(s)
-                || b.BookAuthors.Any(ba => EF.Functions.Like(EF.Functions.Collate(ba.Author.Name, "SQL_Latin1_General_CP1_CI_AI"), $"%{s}%")));
+            if (_context.Database.IsSqlServer())
+            {
+                query = query.Where(b => 
+                    EF.Functions.Like(EF.Functions.Collate(b.Title, "SQL_Latin1_General_CP1_CI_AI"), $"%{s}%")
+                    || b.ISBN.Contains(s)
+                    || b.BookAuthors.Any(ba => EF.Functions.Like(EF.Functions.Collate(ba.Author.Name, "SQL_Latin1_General_CP1_CI_AI"), $"%{s}%")));
+            }
+            else
+            {
+                query = query.Where(b => 
+                    EF.Functions.Like(b.Title, $"%{s}%")
+                    || b.ISBN.Contains(s)
+                    || b.BookAuthors.Any(ba => EF.Functions.Like(ba.Author.Name, $"%{s}%")));
+            }
         }
 
         if (categoryId.HasValue)
