@@ -63,6 +63,28 @@ public static class DbInitializer
         await Insert(Read<OrderItem>(root, "OrderItems"), "OrderItems");
         await Insert(Read<Payment>(root, "Payments"), "Payments");
         await Insert(Read<Review>(root, "Reviews").GroupBy(r => new { r.UserId, r.BookId }).Select(g => g.First()).ToList(), "Reviews");
+
+        // Sync PostgreSQL sequences with imported explicit IDs
+        if (context.Database.IsNpgsql())
+        {
+            var tables = new[] {
+                "Categories", "Publishers", "Authors", "Users", "Addresses",
+                "Books", "Discounts", "GoodsReceipts", "GoodsReceiptItems",
+                "Orders", "OrderItems", "Payments", "Reviews", "Carts", "CartItems"
+            };
+
+            foreach (var table in tables)
+            {
+                try
+                {
+                    await context.Database.ExecuteSqlRawAsync(
+                        $"SELECT setval(pg_get_serial_sequence('\"{table}\"', 'Id'), COALESCE((SELECT MAX(\"Id\") FROM \"{table}\"), 1));"
+                    );
+                }
+                catch { }
+            }
+        }
+
         return true;
     }
 
