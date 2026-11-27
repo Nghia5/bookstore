@@ -20,7 +20,8 @@ public static class DependencyInjection
                 connStr.Contains("sslmode=", StringComparison.OrdinalIgnoreCase))
             {
                 // Managed PostgreSQL (Render managed DB, Supabase, Neon, AWS RDS, etc.)
-                options.UseNpgsql(connStr);
+                var npgsqlConnStr = BuildPostgresConnectionString(connStr);
+                options.UseNpgsql(npgsqlConnStr);
             }
             else if (!string.IsNullOrWhiteSpace(connStr) &&
                      !connStr.Contains(".db", StringComparison.OrdinalIgnoreCase) &&
@@ -42,5 +43,28 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
+    }
+
+    public static string BuildPostgresConnectionString(string connStr)
+    {
+        if (connStr.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+            connStr.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        {
+            var uri = new Uri(connStr);
+            var userInfo = uri.UserInfo.Split(':');
+            var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "";
+            var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+            var database = uri.AbsolutePath.TrimStart('/');
+            var port = uri.Port > 0 ? uri.Port : 5432;
+
+            return $"Host={uri.Host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
+        }
+
+        if (!connStr.Contains("SSL Mode=", StringComparison.OrdinalIgnoreCase))
+        {
+            connStr += ";SSL Mode=Require;Trust Server Certificate=true;";
+        }
+
+        return connStr;
     }
 }
